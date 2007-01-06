@@ -1,0 +1,40 @@
+----------------
+MRD6 for OpenWrt
+----------------
+
+This will generate a 1151K large mrd6 binary for mips.
+
+More information on OpenWrt on http://www.openwrt.org/
+
+
+How to build mrd6 for OpenWRT
+-----------------------------
+
+# Get OpenWrt-SDK (http://openwrt.org/BuildingPackages)
+wget http://downloads.openwrt.org/nbd/gcc34/OpenWrt-SDK-Linux-i686-1.tar.bz2
+tar xjvf OpenWrt-SDK-Linux-i686-1.tar.bz2
+
+cd OpenWrt-SDK-Linux-i686-1/package/
+
+# untar mrd6 source code here
+
+# The directory tree will loks like:
+# .../OpenWrt-SDK-Linux-i686-1/package/mrd6/src/...
+
+# Modify OPENWRTBR in mrd6/ipkg/rules according to your OpenWrt-SDK directory path
+
+# From mrd6 directory start:
+fakeroot ipkg-buildpackage -c
+
+the ipk package will be generated in ../
+
+Thanks to
+---------
+
+Hugo Santos <hsantos@av.it.pt> for all porting, sizing down work and of course for writing mrd6.
+
+Bernhard Schmidt for some network conectivity.
+
+--
+Sebastien Chaumontet (snip) <seb-ipkg-mrd6@snip.fr.eu.org>
+July 2005

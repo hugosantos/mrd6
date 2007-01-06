@@ -1,0 +1,48 @@
+.TH MRD6 8 "IPv6 Multicast routing daemon"
+.SH NAME
+mrd6 \- an IPv6 Multicast routing daemon and framework
+.SH SYNOPSIS
+.B mrd6
+[
+.B \-D
+] [
+.B \-f
+.I config-file
+] [
+.B \-A
+]
+.SH DESCRIPTION
+.B mrd6
+is a multicast routing daemon that supports PIM-SM, MLDv2, MBGP, and others.
+.SH OPTIONS
+Options available for the
+.B mrd6
+command:
+.TP
+\fB\-D\fR
+Forks into the background after init.
+.TP
+\fB\-f\fR
+Specifies the configuration file to be used. If this option is not specified
+.B mrd6
+will try to load \fB\fI/etc/mrd6.conf\fR.
+.TP
+\fB\-A\fR
+Don't auto-load
+.B mrd6
+modules that were built statically.
+.SH FILES
+.TP
+.BI /etc/mrd6.conf
+The default location of the 
+.B mrd6
+config file.
+.SH DIAGNOSTICS
+.B mrd6
+will log to the stderr file descriptor, to a log file or through syslog
+to the system logs. For more information on how to configure \fBmrd6\fR
+check the included documentation.
+.SH BUGS
+Report any bugs to
+.BI http://hng.av.it.pt/mrd6/
+

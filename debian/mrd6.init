@@ -1,0 +1,39 @@
+#!/bin/sh
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+DAEMON=/usr/sbin/mrd6
+NAME=mrd6
+DESC="Multicast routing daemon"
+CONF=/etc/mrd6.conf
+
+test -x $DAEMON || exit 0
+
+test -r $CONF || exit 0
+
+. /lib/lsb/init-functions
+
+case "$1" in
+  start)
+    log_begin_msg "Starting $DESC: $NAME"
+    start-stop-daemon --start --quiet -m --pidfile /var/run/mrd6.pid --exec $DAEMON -- -D
+    log_end_msg $?
+    ;;
+  stop)
+    log_begin_msg "Stopping $DESC: $NAME"
+    start-stop-daemon --stop --quiet --oknodo --exec $DAEMON
+    rm -f /var/run/mrd6.pid
+    log_end_msg $?
+    ;;
+  restart|force-reload)
+    /etc/init.d/$NAME stop
+    /etc/init.d/$NAME start
+    ;;
+  *)
+    N=/etc/init.d/$NAME
+    echo "Usage: $N {start|stop|restart|force-reload}" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
+

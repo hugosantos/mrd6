@@ -1,0 +1,63 @@
+#!/usr/bin/make -f
+
+# Path to OpenWrt-SDK
+OPENWRTBR ?= /opt/openwrt-sdk
+ARCH = mipsel
+
+TARGET = mrd6
+DESTDIR = /tmp/mrd6
+
+# use -static for ipkg
+FULL_STATIC = yes
+
+# compiled modules
+MODULES = mld pim console
+# used options
+OPTIONS = NO_INET6_OPTION
+MODULE_OPTIONS =
+
+-include ipkg/rules.local
+
+# ---------- Cross compilation env
+OPTIMIZE_FOR_CPU=$(ARCH)
+STAGING_DIR=$(OPENWRTBR)/staging_dir_$(ARCH)$(ARCH_FPU_SUFFIX)
+# TARGET_CROSS=$(STAGING_DIR)/bin/$(OPTIMIZE_FOR_CPU)-linux-
+TARGET_CROSS=$(STAGING_DIR)/bin/$(OPTIMIZE_FOR_CPU)-linux-uclibc-
+CC = $(TARGET_CROSS)gcc
+CXX = $(TARGET_CROSS)g++
+STRIP = $(TARGET_CROSS)strip
+
+export TARGET DESTDIR FULL_STATIC CC CXX STRIP
+
+CONF_MODULES = $(addprefix --static ,$(MODULES))
+CONF_OPTIONS = $(addprefix --option ,$(OPTIONS))
+CONF_MODULE_OPTIONS = $(addprefix --module-option ,$(MODULE_OPTIONS))
+
+all: build
+
+configure: configure-stamp
+
+configure-stamp:
+	config/base.pl \
+		--prefix /usr \
+		--optimizations space \
+		--support-modules no \
+		$(CONF_OPTIONS) $(CONF_MODULE_OPTIONS) $(CONF_MODULES)
+	touch configure-stamp
+
+build: configure
+	$(MAKE) -C src
+	$(MAKE) -C tools/c
+
+clean:
+	rm configure-stamp
+	$(MAKE) -C src clean
+
+install: build
+	$(MAKE) -C src install
+	$(MAKE) -C tools/c install
+
+	for f in `find $(DESTDIR) -type f`; do (if file $$f | grep "not stripped" > /dev/null; then ( $(STRIP) --strip-unneeded $$f); fi); done
+
+	mkdir -p $(DESTDIR)/etc/init.d/
+	cp -p ipkg/S50mrd6  $(DESTDIR)/etc/init.d/

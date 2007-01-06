@@ -1,0 +1,95 @@
+MRD - Multicast Routing Daemon
+------------------------------
+
+  MRD is a IPv6 Multicast routing Daemon for Linux.
+
+  MRD is written in C++ and has been primarily developed in Linux 2.6.
+
+  Send any bugs or issues to Hugo Santos <hsantos@av.it.pt>
+
+Features
+--------
+
+  - Extensible modular design;
+  - MLDv1 and MLDv2 support (mld);
+    * MLD Proxying (mld);
+  - PIM-SM support (ASM and SSM) (pim);
+    * Bootstrap (BSR) Mechanism support (pim);
+    * Static RP configuration (pim);
+    * Embedded-RP support (RFC 3956);
+  - partial MBGP support (bgp);
+    * Implements basic BGP4 mechanisms (IPv6 Multicast SAFI)
+      to update local MRIB from MBGP info;
+  - Supports both native and virtual (tunnel) interfaces
+    (tested IPv6-IPv4, IPv6-IPv6 and TUN/TAP tunnels);
+  - Abstract Forwarding Interface (MFA) with user-space module;
+  - Remote configuration and online administration (console);
+
+Building
+--------
+
+  Read the included INSTALL file.
+
+Running
+-------
+
+  Usage `mrd [options]`
+
+    * Options
+       -D	   Run MRD in the background
+       -f <conf>   Use `conf` as the configuration file. The default configuration
+                   file is '/etc/mrd.conf' or if it doesn't exist, the 'mrd.conf'
+		   file in the running directory.
+
+Configuration File
+------------------
+
+  The configuration file follows a hierarchical definition using `identifier { ... }` blocks.
+
+  The `interfaces` and `groups` keywords specify both interface and group configuration.
+
+  * Example
+	pim {
+	  enable bsr-candidate; /* we are a BSR candidate */
+	  enable rp-candidate; /* we are a RP candidate */
+	}
+	groups {
+	  ff0e::/16 {
+	    pim {
+	      enable rp_adv; /* include this group in the RP advertisement */
+	    }
+	  }
+	}
+
+  There are several example configuration files included in the src/confs/ directory.
+
+Console
+-------
+
+  The console module (which is enabled by default) allows you to to
+  control/monitor mrd remotely by using the included 'mrd6sh' program. You may
+  also connect remotely directly to mrd using a standard telnet program and
+  connecting to port 44510.
+
+    telnet -6 ::1 44510
+
+Author and Contacts
+-------------------
+
+  Hugo Santos <hsantos@av.it.pt>
+
+  Please send any requests to hng-request@av.it.pt
+
+Copyright and Licensing
+-----------------------
+
+  This MRD release is GPL Licensed (Refer to the included COPYING file for details).
+
+  Copyright (c) 2004 - Univ. Aveiro, Instituto Telecomunicacoes - Polo Aveiro
+
+Thanks to
+---------
+  - Sebastien Chaumontet and Mickael Hoerdt for extensive testing and support;
+  - Bernhard Schmidt for testing and supplying IPv6 multicast connectivity;
+  - Anand Kumria for uploading and maintaining the oficial debian package;
+

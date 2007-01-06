@@ -1,0 +1,28 @@
+Source: mrd6
+Section: net
+Priority: optional
+Maintainer: Anand Kumria <wildfire@progsoc.org>
+Build-Depends: debhelper (>= 4.0.0), g++, make, perl
+Standards-Version: 3.6.2.1
+
+Package: mrd6
+Architecture: any
+Depends: ${shlibs:Depends}, lsb-base
+Description: IPv6 Multicast Routing Daemon
+ mrd6 is a modular IPv6 Multicast Routing Daemon which implements:
+   * MLDv1 and MLDv2 with forwarding capabilities
+     - MLD proxying
+   * PIM-SM (ASM and SSM)
+     - Bootstrap (BSR) Mechanism support
+     - Static RP configuration
+     - Embedded-RP support
+   * partial MBGP support
+     - Uses IPv6 Multicast SAFI prefixes announced by
+       peers to update local MRIB
+     - Is able to announce local prefixes
+     - Filter support
+   * Native and virtual (tunnel) interfaces support
+   * CLI support (remote configuration and management) via
+     telnet or local access
+ .
+ Homepage: http://hng.av.it.pt/mrd6/

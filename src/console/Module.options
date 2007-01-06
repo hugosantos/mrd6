@@ -1,0 +1,1 @@
+boolean TELNET default on description "Enable console's Telnet support"

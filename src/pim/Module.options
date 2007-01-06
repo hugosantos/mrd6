@@ -1,0 +1,1 @@
+boolean BSR default on description "Enable PIM Bootstrap Router support"

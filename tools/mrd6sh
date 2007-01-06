@@ -1,0 +1,33 @@
+#!/usr/bin/perl -w
+
+# by Marco d'Itri
+
+use strict;
+use IO::Socket::UNIX;
+
+my $MRD_SOCKET = '/var/run/mrd6';
+
+if (@ARGV == 0) {
+	print "No command specified.\n";
+	exit 1;
+}
+
+my $command = join(' ', @ARGV) . "\r\n";
+
+my $sock = new IO::Socket::UNIX(
+	Type	=> SOCK_STREAM,
+	Peer	=> $MRD_SOCKET,
+);
+
+if (not defined $sock) {
+	print "Failed to connect to MRD6, is the router daemon running?\n";
+	exit 1;
+}
+
+print $sock $command or die "write: $!";
+
+while (<$sock>) {
+	print $_;
+}
+
+exit 0;

@@ -1,0 +1,9 @@
+Package: mrd6
+Version: 0.9.5-pre2-1
+Architecture: mipsel
+Maintainer: Sebastien Chaumontet <seb-ipkg-mrd6@snip.fr.eu.org>
+Source: http://hng.av.it.pt/mrd6/
+Section: net
+Priority: optional
+Depends: kmod-ipv6
+Description: IPv6 multicast routing daemon

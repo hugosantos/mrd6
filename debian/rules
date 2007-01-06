@@ -1,0 +1,103 @@
+#!/usr/bin/make -f
+
+# export DH_VERBOSE=1
+
+TARGET = mrd6
+DESTDIR = $(CURDIR)/debian/mrd6
+
+CONFS = $(CURDIR)/src/confs/mrd.conf $(CURDIR)/src/confs/mrd.m6bone-bgp.conf $(CURDIR)/src/confs/mrd.m6bone.conf
+
+export TARGET DESTDIR
+
+configure: configure-stamp
+
+configure-stamp:
+	dh_testdir
+
+	config/base.pl \
+		--prefix /usr \
+		--static mld \
+		--static pim \
+		--static console \
+		--external bgp \
+		--external msnip \
+		--external mrdisc \
+
+	touch configure-stamp
+
+build: build-stamp
+
+build-stamp: configure
+	dh_testdir
+
+	$(MAKE)
+
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+
+	-$(MAKE) clean
+	rm -f src/modules.generated.cpp
+	rm -f src/Makefile.options
+	rm -f build-stamp configure-stamp
+
+	dh_clean
+	# odd these are left behind
+	rm -f debian/*.debhelper
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+	$(MAKE) install
+
+	dh_installexamples $(CONFS)
+	dh_installdocs $(CURDIR)/README
+	dh_installdocs $(CURDIR)/MRD6shQuickRef.txt
+	dh_installdocs $(CURDIR)/Troubleshooter
+	dh_installman $(CURDIR)/docs/mrd6.8
+	dh_installman $(CURDIR)/docs/mrd6sh.1
+
+# Build architecture-independent files here.
+binary-indep: build install
+# We have nothing to do by default.
+
+# Build architecture-dependent files here.
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs
+	dh_installdocs
+	dh_installexamples
+#	dh_install
+#	dh_installmenu
+#	dh_installdebconf
+#	dh_installlogrotate
+#	dh_installemacsen
+#	dh_installcatalogs
+#	dh_installpam
+#	dh_installmime
+	dh_installinit
+#	dh_installcron
+#	dh_installinfo
+#	dh_undocumented
+	dh_installman
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+#	dh_perl
+#	dh_python
+#	dh_makeshlibs
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install

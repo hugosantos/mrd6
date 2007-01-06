@@ -1,0 +1,5 @@
+#!/bin/sh
+if [ -x /etc/init.d/S50mrd6 ]
+then
+  /etc/init.d/S50mrd6 stop
+fi

@@ -1,0 +1,67 @@
+MRD6 Troubleshooter
+-------------------
+
+Common problems:
+
+ (1) P: The router doesn't create the group and source state for a
+        directly attached sender.
+
+ A: mrd6 will only create implicit states (i.e. from receiving data
+    packets) if the source of those packets is local. The router will
+    only assume the source is local _if and only if_ the incoming
+    interface has an address with the same prefix as the source.
+
+ (2) P: I'm testing a small setup using PIM-SM and the Any Source
+        Multicast (ASM) model. The Designated Router for the source
+	has created a source state for the sender and the downstream
+	router has also created the (*,G) state for the localy joined
+	group but no packets reach the receiver.
+
+  A: No RP address is configured by default in mrd6, and PIM-SM
+     requires one for ASM to work. You may configure an RP address on
+     both routers using the following configuration:
+
+     groups {
+       ff00::/8 {
+         pim rp = 2001::1;
+       }
+     }
+
+     Where ff00::/8 is the group mask which is being configured and
+     2001::1 is the RP address. Please note that the configured RP
+     must be a PIM-SM router as well (one of your deployed routers
+     would work fine). You may also configure the RP address online
+     via:
+
+     # mrd6sh groups ff00::/8 pim rp = 2001::1
+
+If your problem doesn't match any of the previous described situations
+procede with the following.
+
+Generic troubleshooter
+----------------------
+
+Increase the logging level to 'all' by for instance either by adding
+to or changing your configuration:
+
+  log {
+    attach default "mrd.log" all;
+  }
+
+You may also attach a live log watcher or change your log level while
+mrd6 is running:
+
+  # mrd6sh attach default \"mrd.log\" all
+
+to change the log level for the logfile to 'all' or:
+
+  # mrd6sh console attach-log all
+
+to watch the log messages live.
+
+After doing so repeat any operations which failed previously and check
+for any error messages in the logs. These messages should express the
+possible problems clearly, and if they don't, or you believe the error
+is wrong or even if you get no related output at all, please contact
+the developers.
+

@@ -1,0 +1,65 @@
+mrd6sh is a tool that along with builtin telnet support allow one to
+interactively configure and obtain information from MRD6. The
+following consists of a brief list of the most important commands.
+Please note that most commands may be called by the least common
+command prefix, for instance, 'sho gr' may be used instead of 'show
+group'.
+
+$ mrd6sh show group [<groupaddr>]
+
+Display all group information, including possible MLD and PIM
+information related to a particular group. A group address may be
+supplied to obtain information about a single group only.
+
+$ mrd6sh show group <groupaddr> detail
+
+Outputs extra information related to group interfaces, in MLD's case
+it outputs the full Multicast Filter, Source timers and particular
+listener interest.
+
+$ mrd6sh show mfa counters
+
+Displays per-group and per-source state 60 second average forwarding
+statistics.
+
+$ mrd6sh show interface [<name> [extended]]
+
+Displays all interface information, including PIM info such as known
+neighbours and MLD information (Querier, etc). An interface name may
+be supplied to obtain information about that interface only. If the
+parameter 'extended' is used for a particular interface, also outputs
+extra PIM information such as neighbour upstream Join/Prune info.
+
+$ mrd6sh show mrib
+
+Outputs the current contents of the Multicast Routing Information
+base.
+
+$ mrd6sh show rpf <address>
+
+Matches MRIB prefix information (possibly including output interface
+and nexthop address) for the supplied address. This command can be
+used to check what information is MRD6 using to route towards a
+particular source.
+
+$ mrd6sh log attach default \"mrd.log\" all
+
+Changes mrd.log's log level to All. Use this whenever you find odd
+behaviour as it triggers the logging of all signaling information,
+state changes, etc. You should use your log file name instead of
+mrd.log if you use a different one.
+
+$ mrd6sh show version
+
+Important information that should be supplied while reporting bugs :-)
+
+--
+
+In case you are using the BGP module, the following command is also of
+interest.
+
+$ mrd6sh show bgp
+
+Outputs current BGP neighbour state, including filter match
+statistics, current BGP state machine state, uptime, etc.
+

@@ -1,0 +1,114 @@
+mrd6 (0.9.5-1) unstable; urgency=low
+
+  * Updated version.
+
+ -- Hugo Santos <hsantos@av.it.pt>  Sat,  7 Jan 2006 23:27:10 +0000
+
+mrd6 (0.9.5-pre1-1) unstable; urgency=low
+
+  * Initial upload to Debian
+
+ -- Anand Kumria <wildfire@progsoc.org>  Tue, 15 Nov 2005 11:05:57 +1100
+
+mrd6 (0.9.4-beta2-1) unstable; urgency=low
+
+  * beta2
+
+ -- Hugo Santos <hsantos@av.it.pt>  Mon, 17 Oct 2005 22:57:45 +0100
+
+mrd6 (0.9.4-beta1-1) unstable; urgency=low
+
+  * Bumped to 0.9.4-beta1
+
+ -- Hugo Santos <hsantos@av.it.pt>  Wed, 28 Sep 2005 01:11:03 +0100
+
+mrd6 (0.9.2-beta3-1) unstable; urgency=low
+
+  * beta3
+
+ -- Hugo Santos <hsantos@av.it.pt>  Tue, 23 Aug 2005 23:36:40 +0100
+
+mrd6 (0.9.2-beta2-1) unstable; urgency=low
+
+  * beta2
+
+ -- Hugo Santos <hsantos@av.it.pt>  Thu, 18 Aug 2005 00:09:07 +0100
+
+mrd6 (0.9.2-beta1-1) unstable; urgency=low
+
+  * Bumped to 0.9.2.
+
+ -- Hugo Santos <hsantos@av.it.pt>  Fri, 12 Aug 2005 00:30:29 +0100
+
+mrd6 (0.9.1-beta2-1) unstable; urgency=low
+
+  * Version bump
+
+ -- Hugo Santos <hsantos@av.it.pt>  Mon, 25 Jul 2005 00:32:34 +0100
+
+mrd6 (0.9.1-beta1-1) unstable; urgency=low
+
+  * Version bump
+
+ -- Hugo Santos <hsantos@av.it.pt>  Thu,  7 Jul 2005 02:34:26 +0100
+
+mrd6 (0.9-beta2) unstable; urgency=low
+
+  * Beta 2
+
+ -- Hugo Santos <hsantos@av.it.pt>  Thu, 30 Jun 2005 06:19:51 +0100
+
+mrd6 (0.9-beta1) unstable; urgency=low
+
+  * Bump to 0.9
+
+ -- Hugo Santos <hsantos@av.it.pt>  Sat, 25 Jun 2005 20:07:24 +0100
+
+mrd6 (0.8.5-beta1-1) unstable; urgency=low
+
+  * Bumped to 0.8.5
+
+ -- Hugo Santos <hsantos@av.it.pt>  Sat, 30 Apr 2005 21:55:09 +0100
+
+mrd6 (0.8-beta2-1) unstable; urgency=low
+
+  * Yet another bump. 0.8-beta2
+
+ -- Hugo Santos <hsantos@av.it.pt>  Sat, 23 Apr 2005 03:06:53 +0100
+
+mrd6 (0.8-beta1-1) unstable; urgency=low
+
+  * Bumped version to 0.8-beta1
+
+ -- Hugo Santos <hsantos@av.it.pt>  Tue, 19 Apr 2005 23:34:04 +0100
+
+mrd6 (0.7-beta3-1) unstable; urgency=low
+
+  * Bumped version to 0.7-beta3
+
+ -- Hugo Santos <hsantos@av.it.pt>  Tue,  5 Apr 2005 02:08:32 +0100
+
+mrd6 (0.7-beta2-1) unstable; urgency=low
+
+  * Bumped version to 0.7-beta2
+
+ -- Hugo Santos <hsantos@av.it.pt>  Thu, 26 Mar 2005 03:46:26 +0000
+
+mrd6 (0.7-beta1-1) unstable; urgency=low
+
+  * Bumped version to 0.7-beta1
+
+ -- Hugo Santos <hsantos@av.it.pt>  Thu, 24 Mar 2005 14:52:00 +0000
+
+mrd6 (0.6-beta6-1) unstable; urgency=low
+
+  * Bumped version to beta6
+
+ -- Hugo Santos <hsantos@av.it.pt>  Sun,  7 Mar 2005 23:13:08 +0000
+
+mrd6 (0.6-beta5-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Hugo Santos <hsantos@av.it.pt>  Sun,  27 Feb 2005 03:08:08 +0000
+
