@@ -5,7 +5,7 @@ MRD - Multicast Routing Daemon
 
   MRD is written in C++ and has been primarily developed in Linux 2.6.
 
-  Send any bugs or issues to Hugo Santos <hsantos@av.it.pt>
+  Send any bugs or issues to Hugo Santos <hugo@fivebits.net>
 
 Features
 --------
@@ -73,19 +73,18 @@ Console
 
     telnet -6 ::1 44510
 
-Author and Contacts
--------------------
+Author and Contact
+------------------
 
-  Hugo Santos <hsantos@av.it.pt>
-
-  Please send any requests to hng-request@av.it.pt
+  Hugo Santos <hugo@fivebits.net>
 
 Copyright and Licensing
 -----------------------
 
   This MRD release is GPL Licensed (Refer to the included COPYING file for details).
 
-  Copyright (c) 2004 - Univ. Aveiro, Instituto Telecomunicacoes - Polo Aveiro
+  Copyright (c) 2006, 2007 - Hugo Santos
+  Copyright (c) 2004, 2005, 2006 - Univ. Aveiro, IT Aveiro
 
 Thanks to
 ---------

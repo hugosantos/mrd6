@@ -25,4 +25,4 @@ Description: IPv6 Multicast Routing Daemon
    * CLI support (remote configuration and management) via
      telnet or local access
  .
- Homepage: http://hng.av.it.pt/mrd6/
+ Homepage: http://fivebits.net/proj/mrd6/
