@@ -2,9 +2,9 @@ Summary: Multicast Routing Daemon for IPv6
 Name: mrd6
 Version: 0.9.5
 Release: 1
-URL: http://hng.av.it.pt/mrd6/
+URL: http://fivebits.net/mrd6/
 License: GPL
-Source0: http://hng.av.it.pt/mrd6/download/mrd6-0.9.5.tar.gz
+Source0: http://fivebits.net/mrd6/download/mrd6-0.9.5.tar.gz
 Group: Networking
 Packager: Hugo Santos <hsantos@av.it.pt>
 BuildRoot: %{_builddir}/%{name}-%{version}-root
@@ -47,5 +47,5 @@ PREFIX=%{_prefix} DESTDIR=%{buildroot} make install
 %{_prefix}/bin/mrd6sh
 
 %changelog
-* Sun Jan  8 2005 Hugo Santos <hsantos@av.it.pt> 0.9.5
+* Sun Jan  8 2006 Hugo Santos <hsantos@av.it.pt> 0.9.5
 - 0.9.5
