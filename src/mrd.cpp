@@ -69,7 +69,7 @@
 mrd *g_mrd = 0;
 
 extern const char *BuildDate;
-static const char *VersionInfo = "mrd6 0.9.6-devel ($Rev$)";
+static const char *VersionInfo = "mrd6 0.9.6 ($Rev$)";
 
 static const char *defaultconffiles[] = {
 	"mrd6.conf",
