@@ -179,7 +179,7 @@ all: $(TARGET) $(EXTERNAL_MODULES)
 
 $(TARGET): $(OBJECTS) $(MRD_OBJECTS)
 	@echo "Linking $(TARGET)"
-	@$(CC) $(LDCMD) $(CXXFLAGS) -o $@ $(MRD_OBJECTS) $(LDFLAGS)
+	@$(CXX) $(LDCMD) $(CXXFLAGS) -o $@ $(MRD_OBJECTS) $(LDFLAGS)
 
 install: $(TARGET) $(EXTERNAL_MODULES)
 	install -D $(TARGET) $(DEST_PREFIX)/sbin/$(TARGET)
