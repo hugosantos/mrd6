@@ -71,6 +71,8 @@ public:
 	/*! after directly accessing the buffer, must commit changes
 	 * of n characters */
 	void commit_change(int n);
+	/*! helper method */
+	void nprintf(int n, const char *format, ...);
 	/*! clears the stream buffer */
 	void clear();
 	/*! returns a null-terminated string pointer to the stream buffer */

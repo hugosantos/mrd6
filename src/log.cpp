@@ -242,6 +242,13 @@ void base_stream::commit_change(int n) {
 	ptr += n;
 }
 
+void base_stream::nprintf(int n, const char *fmt, ...) {
+	va_list vl;
+	va_start(vl, fmt);
+	commit_change(vsnprintf(req_buffer(n), n, fmt, vl));
+	va_end(vl);
+}
+
 void base_stream::clear() {
 	ptr = 0;
 	buffer[0] = 0;
@@ -650,21 +657,15 @@ void stream_push_formated_type(base_stream &os, bool val) {
 }
 
 void stream_push_formated_type(base_stream &os, int val) {
-	char *p = os.req_buffer(32);
-	snprintf(p, 32, "%i", val);
-	os.commit_change(strlen(p));
+	os.nprintf(32, "%i", val);
 }
 
 void stream_push_formated_type(base_stream &os, uint32_t val) {
-	char *p = os.req_buffer(32);
-	snprintf(p, 32, "%u", val);
-	os.commit_change(strlen(p));
+	os.nprintf(32, "%u", val);
 }
 
 void stream_push_formated_type(base_stream &os, uint64_t val) {
-	char *p = os.req_buffer(64);
-	snprintf(p, 64, "%llu", val);
-	os.commit_change(strlen(p));
+	os.nprintf(64, "%llu", val);
 }
 
 void stream_push_formated_type(base_stream &os, const char *val) {
@@ -672,8 +673,6 @@ void stream_push_formated_type(base_stream &os, const char *val) {
 }
 
 void stream_push_formated_type(base_stream &os, const void *val) {
-	char *p = os.req_buffer(32);
-	snprintf(p, 32, "%p", val);
-	os.commit_change(strlen(p));
+	os.nprintf(32, "%p", val);
 }
 
