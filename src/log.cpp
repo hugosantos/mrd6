@@ -621,3 +621,59 @@ bool log_base::attach_node(const std::vector<std::string> &args) {
 	return true;
 }
 
+const char *stream_type_format_parameter(bool) {
+	return "b";
+}
+
+const char *stream_type_format_parameter(int) {
+	return "i";
+}
+
+const char *stream_type_format_parameter(uint32_t) {
+	return "u";
+}
+
+const char *stream_type_format_parameter(uint64_t) {
+	return "llu";
+}
+
+const char *stream_type_format_parameter(const char *) {
+	return "s";
+}
+
+const char *stream_type_format_parameter(const void *) {
+	return "p";
+}
+
+void stream_push_formated_type(base_stream &os, bool val) {
+	os.append_chunk(val ? "true" : "false");
+}
+
+void stream_push_formated_type(base_stream &os, int val) {
+	char *p = os.req_buffer(32);
+	snprintf(p, 32, "%i", val);
+	os.commit_change(strlen(p));
+}
+
+void stream_push_formated_type(base_stream &os, uint32_t val) {
+	char *p = os.req_buffer(32);
+	snprintf(p, 32, "%u", val);
+	os.commit_change(strlen(p));
+}
+
+void stream_push_formated_type(base_stream &os, uint64_t val) {
+	char *p = os.req_buffer(64);
+	snprintf(p, 64, "%llu", val);
+	os.commit_change(strlen(p));
+}
+
+void stream_push_formated_type(base_stream &os, const char *val) {
+	os.append_chunk(val ? val : "(null)");
+}
+
+void stream_push_formated_type(base_stream &os, const void *val) {
+	char *p = os.req_buffer(32);
+	snprintf(p, 32, "%p", val);
+	os.commit_change(strlen(p));
+}
+

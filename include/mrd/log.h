@@ -31,12 +31,27 @@
 
 #include <mrd/node.h>
 
+class base_stream;
+
 class stream_flusher {
 public:
 	virtual ~stream_flusher();
 
 	virtual void flushed(const char *buffer, bool newline) = 0;
 };
+
+const char *stream_type_format_parameter(bool);
+const char *stream_type_format_parameter(int);
+const char *stream_type_format_parameter(uint32_t);
+const char *stream_type_format_parameter(uint64_t);
+const char *stream_type_format_parameter(const char *);
+const char *stream_type_format_parameter(const void *);
+void stream_push_formated_type(base_stream &, bool val);
+void stream_push_formated_type(base_stream &, int val);
+void stream_push_formated_type(base_stream &, uint32_t val);
+void stream_push_formated_type(base_stream &, uint64_t val);
+void stream_push_formated_type(base_stream &, const char *val);
+void stream_push_formated_type(base_stream &, const void *val);
 
 /*!
  * base log stream
@@ -218,62 +233,6 @@ inline void base_stream::check_format_parameter(const char *param) {
 	assert(strncmp(currfmt + 1, param, strlen(param)) == 0);
 
 	currfmt += 1 + strlen(param);
-}
-
-static inline const char *stream_type_format_parameter(bool) {
-	return "b";
-}
-
-static inline const char *stream_type_format_parameter(int) {
-	return "i";
-}
-
-static inline const char *stream_type_format_parameter(uint32_t) {
-	return "u";
-}
-
-static inline const char *stream_type_format_parameter(uint64_t) {
-	return "llu";
-}
-
-static inline const char *stream_type_format_parameter(const char *) {
-	return "s";
-}
-
-static inline const char *stream_type_format_parameter(const void *) {
-	return "p";
-}
-
-static inline void stream_push_formated_type(base_stream &os, bool val) {
-	os.append_chunk(val ? "true" : "false");
-}
-
-static inline void stream_push_formated_type(base_stream &os, int val) {
-	char *p = os.req_buffer(32);
-	snprintf(p, 32, "%i", val);
-	os.commit_change(strlen(p));
-}
-
-static inline void stream_push_formated_type(base_stream &os, uint32_t val) {
-	char *p = os.req_buffer(32);
-	snprintf(p, 32, "%u", val);
-	os.commit_change(strlen(p));
-}
-
-static inline void stream_push_formated_type(base_stream &os, uint64_t val) {
-	char *p = os.req_buffer(64);
-	snprintf(p, 64, "%llu", val);
-	os.commit_change(strlen(p));
-}
-
-static inline void stream_push_formated_type(base_stream &os, const char *val) {
-	os.append_chunk(val ? val : "(null)");
-}
-
-static inline void stream_push_formated_type(base_stream &os, const void *val) {
-	char *p = os.req_buffer(32);
-	snprintf(p, 32, "%p", val);
-	os.commit_change(strlen(p));
 }
 
 class log_base;
