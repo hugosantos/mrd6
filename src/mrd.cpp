@@ -2031,7 +2031,8 @@ bool mrd::remove_module(mrd_module *mod) {
 	m_modules.erase(i);
 
 #ifndef MRD_NO_DYNAMIC_MODULE_LOADING
-	dlclose(foo);
+	if (foo)
+		dlclose(foo);
 #endif
 
 	return true;
