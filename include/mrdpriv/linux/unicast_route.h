@@ -76,7 +76,6 @@ private:
 	void handle_route_event(bool isnew, nlmsghdr *);
 	void handle_intf_event(bool isnew, nlmsghdr *);
 	void handle_addr_event(bool isnew, nlmsghdr *);
-	void handle_neigh_event(bool isnew, nlmsghdr *);
 
 	void parse_prefix_rec(rtattr *tb[], int, int, lookup_result &) const;
 

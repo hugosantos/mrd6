@@ -298,10 +298,6 @@ int linux_unicast_router::process_message() {
 		case RTM_DELADDR:
 			handle_addr_event(hd->nlmsg_type != RTM_DELADDR, hd);
 			break;
-		case RTM_NEWNEIGH:
-		case RTM_DELNEIGH:
-			handle_neigh_event(hd->nlmsg_type != RTM_DELNEIGH, hd);
-			break;
 		default:
 			break;
 		}
@@ -407,29 +403,6 @@ void linux_unicast_router::handle_addr_event(bool isnew, nlmsghdr *hdr) {
 			if (intf) {
 				intf->address_added_or_removed(isnew, addr);
 			}
-		}
-	}
-}
-
-void linux_unicast_router::handle_neigh_event(bool isnew, nlmsghdr *hdr) {
-	ndmsg *ndm = (ndmsg *)NLMSG_DATA(hdr);
-
-	if (ndm->ndm_family == AF_INET6) {
-		rtattr *tb[NDA_MAX + 1];
-		memset(tb, 0, sizeof(tb));
-
-		netlink_msg::parse_rtatable(tb, NDA_MAX, NDA_RTA(ndm),
-				hdr->nlmsg_len - NLMSG_LENGTH(sizeof(*ndm)));
-
-		if (tb[NDA_DST] && tb[NDA_LLADDR]) {
-#if 0
-			interface *intf = g_mrd->get_interface_by_index(ndm->ndm_ifindex);
-
-			if (intf) {
-				intf->neighbour_event(isnew, RTA_DATA(tb[NDA_LLADDR]),
-				RTA_PAYLOAD(tb[NDA_LLADDR]), (in6_addr *)RTA_DATA(tb[NDA_DST]));
-			}
-#endif
 		}
 	}
 }
