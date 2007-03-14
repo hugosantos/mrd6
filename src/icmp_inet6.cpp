@@ -41,20 +41,6 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 
-/* Not every system has inet6_option_xxx */
-#ifdef NO_INET6_OPTION
-int inet6_option_space(int nbytes);
-int inet6_option_init(void *bp, struct cmsghdr **cmsgp, int type);
-int inet6_option_append(struct cmsghdr *cmsg, const uint8_t *typep,
-			int multx, int plusy);
-#endif /* NO_INET6_OPTION */
-
-struct ip6_rta {
-	uint8_t type;
-	uint8_t length;
-	uint16_t value;
-} __attribute__ ((packed));
-
 icmp_inet6::icmp_inet6()
 	: m_icmpsock("icmpv6", this, std::mem_fun(&icmp_inet6::data_available)) {
 }
@@ -141,6 +127,32 @@ void icmp_inet6::data_available(uint32_t) {
 			       (icmp6_hdr *)buffer, recvlen);
 }
 
+static int _add_rta(const socket6_base &b, uint16_t value) {
+	/* Hop-by-hop Option header with RTA
+	 * [ 00 00 05 02 00 00 01 00 ] */
+	const int opt_rta_len = 8;
+
+	cmsghdr *cmsg = b.next_cmsghdr(opt_rta_len);
+	if (cmsg == NULL)
+		return -1;
+
+	cmsg->cmsg_len = CMSG_SPACE(opt_rta_len);
+	cmsg->cmsg_level = IPPROTO_IPV6;
+	cmsg->cmsg_type = IPV6_HOPOPTS;
+
+	uint8_t *extbuf = (uint8_t *)CMSG_DATA(cmsg);
+
+	extbuf[0] = 0x00; /* next header */
+	extbuf[1] = 0x00; /* length (8 bytes) */
+	extbuf[2] = IP6OPT_ROUTER_ALERT;
+	extbuf[3] = 0x02; /* RTA length (2 bytes) */
+	*(uint16_t *)(extbuf + 4) = htons(value);
+	extbuf[6] = IP6OPT_PADN;
+	extbuf[7] = 0x00;
+
+	return CMSG_SPACE(opt_rta_len);
+}
+
 bool icmp_inet6::send_icmp(const interface *intf, const in6_addr &src,
 			   const in6_addr &to, int rtaval, icmp6_hdr *hdr,
 			   uint16_t len) const {
@@ -161,47 +173,12 @@ bool icmp_inet6::send_icmp(const interface *intf, const in6_addr &src,
 	int optspace = 0;
 
 	if (rtaval >= 0) {
-		ip6_rta rta;
-
-		/*
-		 * The router alert option has the following format:
-		 *
-		 *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-		 *   |0 0 0|0 0 1 0 1|0 0 0 0 0 0 1 0|        Value (2 octets)       |
-		 *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-		 *                      length = 2
-		 */
-
-		rta.type = 5;
-		rta.length = 2;
-		rta.value = rtaval;
-
-		optspace = inet6_option_space(sizeof(ip6_rta));
-		cmsghdr *msg = m_icmpsock.next_cmsghdr(optspace);
-
-		int conlevel = 0;
-
-		if (msg) {
-			memset(msg, 0, optspace);
-
-			conlevel++;
-
-			if (inet6_option_init(msg, &msg, IPV6_HOPOPTS) == 0) {
-				conlevel++;
-
-				if (inet6_option_append(msg, (uint8_t *)&rta,
-							1, 0) == 0) {
-					conlevel++;
-				}
-			}
-		}
-
-		if (conlevel < 3) {
+		optspace = _add_rta(m_icmpsock, rtaval);
+		if (optspace < 0) {
 			if (g_mrd->should_log(EXTRADEBUG))
-				g_mrd->log().xprintf(
+				g_mrd->log().writeline(
 					"Failed to send ICMPv6 message: wasn't"
-					"able to construct message (%i, %i).",
-					optspace, conlevel);
+					"able to construct message.");
 			return false;
 		}
 	}
@@ -249,148 +226,4 @@ void icmp_inet6::removed_interface(interface *intf) {
 		m_icmpsock.leave_mc(intf, i->first);
 	}
 }
-
-/* Adapted from USAGI Linux
- *  - usagi/usagi/libinet6/ip6opt.c */
-#ifdef NO_INET6_OPTION
-
-struct _ip6_ext {
-	uint8_t ip6e_nxt;
-	uint8_t ip6e_len;
-};
-
-/*
- * This function returns the number of bytes required to hold an option
- * when it is stored as ancillary data, including the cmsghdr structure
- * at the beginning, and any padding at the end (to make its size a
- * multiple of 8 bytes).  The argument is the size of the structure
- * defining the option, which must include any pad bytes at the
- * beginning (the value y in the alignment term "xn + y"), the type
- * byte, the length byte, and the option data.
- */
-int
-inet6_option_space(int nbytes)
-{
-        nbytes += sizeof(_ip6_ext);        /* we need space for nxt-hdr and length fields */
-        return(CMSG_SPACE((nbytes + 7) & ~7));
-}
-
-/*
- * This function is called once per ancillary data object that will
- * contain either Hop-by-Hop or Destination options.  It returns 0 on
- * success or -1 on an error.
- */
-int
-inet6_option_init(void *bp, struct cmsghdr **cmsgp, int type)
-{
-        struct cmsghdr *ch = (struct cmsghdr *)bp;
-
-        /* argument validation */
-        if (type != IPV6_HOPOPTS && type != IPV6_DSTOPTS)
-                return(-1);
-
-        ch->cmsg_level = IPPROTO_IPV6;
-        ch->cmsg_type = type;
-        ch->cmsg_len = CMSG_LEN(0);
-
-        *cmsgp = ch;
-        return(0);
-}
-
-#ifndef IP6OPT_PAD1
-#define IP6OPT_PAD1 0
-#endif
-
-#ifndef IP6OPT_PADN
-#define IP6OPT_PADN 1
-#endif
-
-static void
-inet6_insert_padopt(uint8_t *p, int len)
-{
-        switch(len) {
-         case 0:
-                 return;
-         case 1:
-                 p[0] = IP6OPT_PAD1;
-                 return;
-         default:
-                 p[0] = IP6OPT_PADN;
-                 p[1] = len - 2;
-                 memset(&p[2], 0, len - 2);
-                 return;
-        }
-}
-
-/*
- * This function appends a Hop-by-Hop option or a Destination option
- * into an ancillary data object that has been initialized by
- * inet6_option_init().  This function returns 0 if it succeeds or -1 on
- * an error.
- * multx is the value x in the alignment term "xn + y" described
- * earlier.  It must have a value of 1, 2, 4, or 8.
- * plusy is the value y in the alignment term "xn + y" described
- * earlier.  It must have a value between 0 and 7, inclusive.
- */
-int
-inet6_option_append(struct cmsghdr *cmsg, const uint8_t *typep, int multx, int plusy)
-{
-        int padlen, optlen, off;
-        u_char *bp = (u_char *)cmsg + cmsg->cmsg_len;
-        struct _ip6_ext *eh = (struct _ip6_ext *)CMSG_DATA(cmsg);
-
-        /* argument validation */
-        if (multx != 1 && multx != 2 && multx != 4 && multx != 8)
-                return(-1);
-        if (plusy < 0 || plusy > 7)
-                return(-1);
-	/*
-        if (typep[0] > 255)
-                return(-1);
-	*/
-
-        /*
-         * If this is the first option, allocate space for the
-         * first 2 bytes(for next header and length fields) of
-         * the option header.
-         */
-        if (bp == (u_char *)eh) {
-                bp += 2;
-                cmsg->cmsg_len += 2;
-        }
-
-        /* calculate pad length before the option. */
-        off = bp - (u_char *)eh;
-        padlen = (((off % multx) + (multx - 1)) & ~(multx - 1)) -
-                (off % multx);
-        padlen += plusy;
-        padlen %= multx;        /* keep the pad as short as possible */
-        /* insert padding */
-        inet6_insert_padopt(bp, padlen);
-        cmsg->cmsg_len += padlen;
-        bp += padlen;
-
-        /* copy the option */
-        if (typep[0] == IP6OPT_PAD1)
-                optlen = 1;
-        else
-                optlen = typep[1] + 2;
-        memcpy(bp, typep, optlen);
-        bp += optlen;
-        cmsg->cmsg_len += optlen;
-
-        /* calculate pad length after the option and insert the padding */
-        off = bp - (u_char *)eh;
-        padlen = ((off + 7) & ~7) - off;
-        inet6_insert_padopt(bp, padlen);
-        bp += padlen;
-        cmsg->cmsg_len += padlen;
-
-        /* update the length field of the ip6 option header */
-        eh->ip6e_len = ((bp - (u_char *)eh) >> 3) - 1;
-
-        return(0);
-}
-
-#endif /* NO_INET6_OPTION */
 

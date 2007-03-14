@@ -42,6 +42,10 @@
 #include <netinet/icmp6.h>
 #include <arpa/inet.h>
 
+#ifndef IP6_ALERT_MLD
+#define IP6_ALERT_MLD 0x00
+#endif
+
 mld_router *mld = 0;
 
 in6_addr in6addr_linkscope_allnodes;
@@ -1399,7 +1403,7 @@ mld_group *mld_router::match(group *grp) const {
 
 bool mld_router::send_icmp(const interface *intf, const in6_addr &addr,
 			   icmp6_hdr *hdr, uint16_t len) const {
-	return g_mrd->icmp().send_icmp(intf, addr, 0, hdr, len);
+	return g_mrd->icmp().send_icmp(intf, addr, IP6_ALERT_MLD, hdr, len);
 }
 
 base_stream &mld_router::log_router_desc(base_stream &os) const {

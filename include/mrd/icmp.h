@@ -52,7 +52,7 @@ public:
 	bool send_icmp(const interface *intf, const in6_addr &dst,
 		       icmp6_hdr *, uint16_t) const;
 	bool send_icmp(const interface *intf, const in6_addr &dst,
-		       int, icmp6_hdr *, uint16_t) const;
+		       int rta, icmp6_hdr *, uint16_t) const;
 	bool send_icmp(const interface *, const in6_addr &,
 		       const in6_addr &, icmp6_hdr *, uint16_t) const;
 

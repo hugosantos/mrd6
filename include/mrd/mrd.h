@@ -138,7 +138,7 @@ public:
 	bool destination_address(sockaddr_in6 &, int &);
 
 	/*! Returns the next cmsghdr, as the first one is always IPV6_PKTINFO */
-	cmsghdr *next_cmsghdr(int maxlen);
+	cmsghdr *next_cmsghdr(int maxlen) const;
 
 private:
 	/* in6_pktinfo is 20 bytes length */

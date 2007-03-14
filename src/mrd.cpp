@@ -662,16 +662,11 @@ bool socket6_base::destination_address(sockaddr_in6 &dst, int &index) {
 	return false;
 }
 
-cmsghdr *socket6_base::next_cmsghdr(int maxlen) {
-	_h.msg_control = _ctlbuf;
-	_h.msg_controllen = sizeof(_ctlbuf);
+cmsghdr *socket6_base::next_cmsghdr(int maxlen) const {
+	if ((CMSG_SPACE(sizeof(in6_pktinfo)) + CMSG_SPACE(maxlen)) > sizeof(_ctlbuf))
+		return NULL;
 
-	cmsghdr *chdr = (cmsghdr *)CMSG_FIRSTHDR(&_h);
-	chdr->cmsg_len = CMSG_LEN(sizeof(in6_pktinfo));
-	chdr->cmsg_level = IPPROTO_IPV6;
-	chdr->cmsg_type = IPV6_PKTINFO;
-
-	return CMSG_NXTHDR(&_h, chdr);
+	return (cmsghdr *)(_ctlbuf + CMSG_SPACE(sizeof(in6_pktinfo)));
 }
 
 encoding_buffer::encoding_buffer(int avail) {
