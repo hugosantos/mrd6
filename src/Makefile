@@ -161,7 +161,7 @@ mrd.version.cpp: $(SOURCES) Makefile Makefile.options
 
 modules.cpp: Makefile Makefile.options
 	@echo "Generating modules.cpp"
-	@scripts/generate-modules-cpp.pl > modules.cpp
+	@scripts/generate-modules-cpp.pl $(STATIC_MODULES) > modules.cpp
 
 .PHONY: tests
 tests: $(TESTS)
