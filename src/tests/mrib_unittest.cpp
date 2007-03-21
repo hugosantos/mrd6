@@ -1,6 +1,7 @@
 #define BOOST_AUTO_TEST_MAIN
 #include <boost/test/auto_unit_test.hpp>
 
+#include <mrd/address.h>
 #include <mrd/mrib.h>
 
 using namespace std;
@@ -42,7 +43,7 @@ static void test1(mrib_def &m, test_origin &o,
 
 	BOOST_CHECK(m.prefix_lookup(ADDR("2001:124::1"), ANY()) == p1);
 	BOOST_CHECK(m.prefix_lookup(ADDR("2001:123::1"), ANY()) == p2);
-	BOOST_CHECK(m.prefix_lookup(ADDR("3000:"), ANY()) == NULL);
+	BOOST_CHECK(m.prefix_lookup(ADDR("7000::"), ANY()) == NULL);
 }
 
 BOOST_AUTO_UNIT_TEST(mrib_test1) {
@@ -55,7 +56,7 @@ BOOST_AUTO_UNIT_TEST(mrib_test1) {
 	mrib_def::prefix *p2 = new_prefix(&o);
 
 	inet6_addr pfx1(ADDR("2000::/3"));
-	inet6_addr pfx2(ADDR("2000:123::/32"));
+	inet6_addr pfx2(ADDR("2001:123::/32"));
 
 	BOOST_REQUIRE(m.install_prefix(pfx1, p1));
 	BOOST_REQUIRE(m.install_prefix(pfx2, p2));
@@ -75,7 +76,7 @@ BOOST_AUTO_UNIT_TEST(mrib_test1_rev) {
 	mrib_def::prefix *p2 = new_prefix(&o);
 
 	inet6_addr pfx1(ADDR("2000::/3"));
-	inet6_addr pfx2(ADDR("2000:123::/32"));
+	inet6_addr pfx2(ADDR("2001:123::/32"));
 
 	BOOST_REQUIRE(m.install_prefix(pfx2, p2));
 	BOOST_REQUIRE(m.install_prefix(pfx1, p1));
