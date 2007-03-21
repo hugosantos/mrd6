@@ -233,15 +233,15 @@ mld_ext.so: $(MLD_EXT_OBJECTS)
 	@echo "Module $@"
 	@$(MODULE_CXX) -o $@ $+
 
-tests/ptree_unittest: $(TEST_OBJECTS) tests/ptree_unittest.cpp
-	@echo "Linking ptree_unittest"
-	@$(CXX) $(LDCMD) $(CXXFLAGS) -o $@ tests/ptree_unittest.cpp \
-		$(TEST_OBJECTS) $(LDFLAGS) -lboost_unit_test_framework
+define unittest_template
+$(1): $(TEST_OBJECTS) $(1).cpp
+	@echo "Linking $(1)"
+	@$(CXX) $(LDCMD) $(CXXFLAGS) -o $(1) $(1).cpp $(TEST_OBJECTS) \
+		$(LDFLAGS) -lboost_unit_test_framework
+endef
 
-tests/mrib_unittest: $(TEST_OBJECTS) tests/mrib_unittest.cpp
-	@echo "Linking mrib_unittest"
-	@$(CXX) $(LDCMD) $(CXXFLAGS) -o $@ tests/mrib_unittest.cpp \
-		$(TEST_OBJECTS) $(LDFLAGS) -lboost_unit_test_framework
+# generate the required build rules for each unit test
+$(foreach test,$(TESTS),$(eval $(call unittest_template,$(test))))
 
 .PHONY: tests
 tests: $(TESTS)
