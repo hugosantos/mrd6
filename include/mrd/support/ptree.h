@@ -147,10 +147,10 @@ public:
 		uint32_t prevbit = 0, difbit, bitlen = pnode_prefix_length(key);
 
 		/* descend the binary trie */
-		while (node && node->_t_bit < bitlen) {
+		while (node && node->_t_bit <= bitlen) {
 			if (node->_t_color == ptree_node::BLACK) {
 				difbit = _first_dif_bit(((node_type *)node)->prefix,
-						    key, 0, node->_t_bit);
+							key, 0, node->_t_bit);
 
 				if (difbit < prevbit || difbit < node->_t_bit)
 					break;
@@ -159,8 +159,10 @@ public:
 
 			prevbit = node->_t_bit;
 
-			node = pnode_symbol_at(key, node->_t_bit) ?
-				node->_t_right : node->_t_left;
+			if (pnode_symbol_at(key, node->_t_bit))
+				node = node->_t_right;
+			else
+				node = node->_t_left;
 		}
 
 		return (node_type *)best;
@@ -345,7 +347,8 @@ private:
 
 	int _first_dif_bit(const key_type &p1, const key_type &p2, int st,
 			   int end) const {
-		for (; st < end && pnode_symbol_at(p1, st) == pnode_symbol_at(p2, st); st++);
+		while (st < end && pnode_symbol_at(p1, st) == pnode_symbol_at(p2, st))
+			st++;
 		return st;
 	}
 
