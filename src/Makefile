@@ -82,7 +82,7 @@ MLD_EXT_TARGET	= mld_ext.so
 
 EXTERNAL_MODULES = $(foreach module,$(MODULES),$($(module)_TARGET))
 
-TESTS = tests/ptree_unittest tests/mrib_unittest
+TESTS = tests/address_unittest tests/ptree_unittest tests/mrib_unittest
 
 DEST_PREFIX = $(DESTDIR)$(PREFIX)
 
