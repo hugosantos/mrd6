@@ -150,9 +150,9 @@ public:
 		while (node && node->_t_bit <= bitlen) {
 			if (node->_t_color == ptree_node::BLACK) {
 				difbit = _first_dif_bit(((node_type *)node)->prefix,
-							key, 0, node->_t_bit);
+							key, prevbit, node->_t_bit);
 
-				if (difbit < prevbit || difbit < node->_t_bit)
+				if (difbit < node->_t_bit)
 					break;
 				best = node;
 			}
