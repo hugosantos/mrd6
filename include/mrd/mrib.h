@@ -27,6 +27,7 @@
 
 #include <mrd/node.h>
 #include <mrd/timers.h>
+#include <mrd/interface.h>
 
 #include <mrd/support/objpool.h>
 #include <mrd/support/ptree.h>

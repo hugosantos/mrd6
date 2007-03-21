@@ -43,7 +43,7 @@ ZEBRA_SOURCES = zebra/zebra.cpp
 
 MLD_EXT_SOURCES = mld/mld_def.cpp mld/mld_router.cpp mld/mld_conf.cpp extra/mld_ext.cpp
 
-TESTS = tests/ptree_unittest
+TESTS = tests/ptree_unittest tests/mrib_unittest
 
 ifeq ($(NO_INET6_OPTION),yes)
 	CFLAGS += -DNO_INET6_OPTION
@@ -233,10 +233,15 @@ mld_ext.so: $(MLD_EXT_OBJECTS)
 	@echo "Module $@"
 	@$(MODULE_CXX) -o $@ $+
 
-tests/ptree_unittest: $(TEST_OBJECTS) tests/ptree_unittest.o
+tests/ptree_unittest: $(TEST_OBJECTS)
 	@echo "Linking ptree_unittest"
-	@$(CXX) $(LDCMD) $(CXXFLAGS) -o $@ $(TEST_OBJECTS) \
-		tests/ptree_unittest.o $(LDFLAGS) -lboost_unit_test_framework
+	@$(CXX) $(LDCMD) $(CXXFLAGS) -o $@ tests/ptree_unittest.cpp \
+		$(TEST_OBJECTS) $(LDFLAGS) -lboost_unit_test_framework
+
+tests/mrib_unittest: $(TEST_OBJECTS)
+	@echo "Linking mrib_unittest"
+	@$(CXX) $(LDCMD) $(CXXFLAGS) -o $@ tests/mrib_unittest.cpp \
+		$(TEST_OBJECTS) $(LDFLAGS) -lboost_unit_test_framework
 
 .PHONY: tests
 tests: $(TESTS)
@@ -266,7 +271,8 @@ clean:
 		$(MLD_OBJECTS) $(PIM_OBJECTS) $(CONSOLE_OBJECTS) \
 		$(BGP_OBJECTS) $(MSNIP_OBJECTS) $(MRDISC_OBJECTS) \
 		$(RIPNG_OBJECTS) $(ZEBRA_OBJECTS) \
-		$(EXTERNAL_MODULES) $(MRD_VERSION_CPP)
+		$(EXTERNAL_MODULES) $(MRD_VERSION_CPP) \
+		$(TESTS)
 
 .PHONY: install clean
 
