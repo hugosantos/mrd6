@@ -228,7 +228,8 @@ void base_ptree::dump_internal_tree(base_stream &os, const ptree_node *node,
 	if (node->_t_color == ptree_node::BLACK)
 		write_prefix(os, node);
 	else
-		os.xprintf("white %i", (int)node->_t_bit);
+		os.write("white");
+	os.xprintf(" at %i", (int)node->_t_bit);
 	os.newl();
 
 	os.inc_level();
