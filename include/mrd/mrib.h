@@ -92,7 +92,7 @@ public:
 		mrib_watcher_base *watchhead;
 	};
 
-	typedef ptree<inet6_addr, mrib_node, objpool<ptree_node> > mrib_trie;
+	typedef ptree<inet6_addr, mrib_node> mrib_trie;
 
 	mrib_connected_origin &local() { return *m_local; }
 

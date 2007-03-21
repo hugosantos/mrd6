@@ -116,7 +116,7 @@ void mrib_origin::output_prefix_info(base_stream &,
 }
 
 mrib_def::mrib_def(node *m)
-	: node(m, "mrib"), m_trie(objpool<ptree_node>(512)), m_trie_nodes(512) {
+	: node(m, "mrib"), m_trie(/*objpool<ptree_node>(512)*/), m_trie_nodes(512) {
 	m_local = 0;
 	m_static = 0;
 }

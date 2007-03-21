@@ -43,6 +43,8 @@ ZEBRA_SOURCES = zebra/zebra.cpp
 
 MLD_EXT_SOURCES = mld/mld_def.cpp mld/mld_router.cpp mld/mld_conf.cpp extra/mld_ext.cpp
 
+TESTS = tests/ptree_unittest
+
 ifeq ($(NO_INET6_OPTION),yes)
 	CFLAGS += -DNO_INET6_OPTION
 endif
@@ -64,7 +66,7 @@ else
 	endif
 endif
 
-MRD_CXXFLAGS = -fno-rtti -fno-exceptions -fPIC -D$(PLATFORM)
+MRD_CXXFLAGS = -fno-exceptions -fPIC -D$(PLATFORM)
 
 MODULE_OPTIONS_CXXFLAGS = $(addprefix -D,$(MODULE_OPTIONS))
 
@@ -119,9 +121,9 @@ LINUX_SOURCES = linux/us_mfa.cpp linux/linux_icmp_raw.cpp \
 BSD_SOURCES = bsd/bsd_rib.cpp bsd/bsd_mfa.cpp bsd/mrd_components.cpp
 
 SOURCES = address.cpp address_set.cpp group.cpp icmp_inet6.cpp icmp.cpp \
-	  interface.cpp log.cpp main.cpp mfa.cpp mrd.cpp mrib.cpp node.cpp \
+	  interface.cpp log.cpp mfa.cpp mrd.cpp mrib.cpp node.cpp \
 	  parser.cpp rib.cpp router.cpp timers.cpp support/objpool.cpp \
-	  $(STATIC_MODULES_CPP)
+	  support/ptree.cpp
 
 ifeq ($(PLATFORM),OS_LINUX)
 	SOURCES += $(LINUX_SOURCES)
@@ -131,11 +133,13 @@ ifeq ($(PLATFORM),OS_BSD)
 	SOURCES += $(BSD_SOURCES)
 endif
 
-BASE_OBJECTS = $(SOURCES:.cpp=.o)
-
 MRD_VERSION_CPP = mrd.version.cpp
 
-MRD_SOURCES = $(SOURCES) $(STATIC_MODULE_SOURCES) $(MRD_VERSION_CPP)
+TEST_SOURCES = $(SOURCES) $(MRD_VERSION_CPP) no-modules.cpp
+TEST_OBJECTS = $(TEST_SOURCES:.cpp=.o)
+
+MRD_SOURCES = $(SOURCES) main.cpp $(STATIC_MODULES_CPP) \
+	      $(STATIC_MODULE_SOURCES) $(MRD_VERSION_CPP)
 
 ALL_SOURCES = $(MRD_SOURCES)
 
@@ -228,6 +232,14 @@ zebra.so: $(ZEBRA_OBJECTS)
 mld_ext.so: $(MLD_EXT_OBJECTS)
 	@echo "Module $@"
 	@$(MODULE_CXX) -o $@ $+
+
+tests/ptree_unittest: $(TEST_OBJECTS) tests/ptree_unittest.o
+	@echo "Linking ptree_unittest"
+	@$(CXX) $(LDCMD) $(CXXFLAGS) -o $@ $(TEST_OBJECTS) \
+		tests/ptree_unittest.o $(LDFLAGS) -lboost_unit_test_framework
+
+.PHONY: tests
+tests: $(TESTS)
 
 OPTIONS = Makefile.options
 
