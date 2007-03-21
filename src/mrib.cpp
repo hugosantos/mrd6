@@ -214,6 +214,11 @@ mrib_def::prefix *mrib_def::get_prefix(const inet6_addr &source,
 	if (!n)
 		return 0;
 
+	if (origin == NULL) {
+		if (n->head != NULL && n->head->next == NULL)
+			return n->head;
+	}
+
 	for (prefix *curr = n->head; curr; curr = curr->next) {
 		if (curr->owner == origin) {
 			return curr;

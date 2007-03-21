@@ -233,12 +233,12 @@ mld_ext.so: $(MLD_EXT_OBJECTS)
 	@echo "Module $@"
 	@$(MODULE_CXX) -o $@ $+
 
-tests/ptree_unittest: $(TEST_OBJECTS)
+tests/ptree_unittest: $(TEST_OBJECTS) tests/ptree_unittest.cpp
 	@echo "Linking ptree_unittest"
 	@$(CXX) $(LDCMD) $(CXXFLAGS) -o $@ tests/ptree_unittest.cpp \
 		$(TEST_OBJECTS) $(LDFLAGS) -lboost_unit_test_framework
 
-tests/mrib_unittest: $(TEST_OBJECTS)
+tests/mrib_unittest: $(TEST_OBJECTS) tests/mrib_unittest.cpp
 	@echo "Linking mrib_unittest"
 	@$(CXX) $(LDCMD) $(CXXFLAGS) -o $@ tests/mrib_unittest.cpp \
 		$(TEST_OBJECTS) $(LDFLAGS) -lboost_unit_test_framework

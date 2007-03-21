@@ -928,6 +928,8 @@ void node::broadcast_event(int id, void *param, bool all) {
 }
 
 bool node::should_log(int level) const {
+	if (m_parent == NULL)
+		return false;
 	return m_parent->should_log(level);
 }
 
