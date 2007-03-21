@@ -10,23 +10,39 @@ PREFIX ?= /usr/local
 STATIC_STDCXX ?= no
 FULL_STATIC ?= no
 NO_INLINE ?= no
-NO_INET6_OPTION ?= no
 
-GENERATED_MODULE_LIST ?= no
+STATIC_MODULES ?= MLD PIM CONSOLE
 
 ifeq ($(FULL_STATIC),yes)
 	SUPPORT_MODULES = no
+	LDCMD = -static
 endif
 
 ifeq ($(SUPPORT_MODULES),yes)
-	EXTERNAL_MODULES ?= bgp.so
+	MODULES ?= BGP
+	LDCMD = -rdynamic
+else
+	MODULE_OPTIONS += -DMRD_NO_DYNAMIC_MODULE_LOADING
 endif
 
 INCLUDES = -I../include
 
 NOW = $(shell date -u)
 
-CFLAGS += -ansi -Wall -Wno-multichar
+SOURCES = address.cpp address_set.cpp group.cpp icmp_inet6.cpp icmp.cpp \
+	  interface.cpp log.cpp mfa.cpp mrd.cpp mrib.cpp node.cpp \
+	  parser.cpp rib.cpp router.cpp timers.cpp support/objpool.cpp \
+	  support/ptree.cpp
+
+ifeq ($(PLATFORM),OS_LINUX)
+	SOURCES += linux/us_mfa.cpp linux/linux_icmp_raw.cpp \
+		   linux/linux_unicast_route.cpp linux/mrd_components.cpp
+	LDFLAGS += -ldl
+endif
+
+ifeq ($(PLATFORM),OS_BSD)
+	SOURCES += bsd/bsd_rib.cpp bsd/bsd_mfa.cpp bsd/mrd_components.cpp
+endif
 
 MLD_SOURCES = mld/mld_def.cpp mld/mld_router.cpp mld/mld_conf.cpp mld/mld_module.cpp
 PIM_SOURCES = pim/pim_def.cpp pim/pim_router.cpp pim/pim_interface.cpp \
@@ -40,74 +56,55 @@ MSNIP_SOURCES = msnip/msnip_module.cpp
 MRDISC_SOURCES = mrdisc/mrdisc_module.cpp
 RIPNG_SOURCES = ripng/ripng.cpp
 ZEBRA_SOURCES = zebra/zebra.cpp
+MLD_EXT_SOURCES = mld/mld_def.cpp mld/mld_router.cpp mld/mld_conf.cpp \
+		  extra/mld_ext.cpp
 
-MLD_EXT_SOURCES = mld/mld_def.cpp mld/mld_router.cpp mld/mld_conf.cpp extra/mld_ext.cpp
+TEST_SOURCES = $(SOURCES) no-modules.cpp mrd.version.cpp
+MRD_SOURCES = $(SOURCES) main.cpp modules.cpp mrd.version.cpp
+
+# used to build object list
+ALL_SOURCES = $(SOURCES) main.cpp $(MLD_SOURCES) $(PIM_SOURCES) \
+	      $(CONSOLE_SOURCES) $(BGP_SOURCES) $(MSNIP_SOURCES) \
+	      $(MRD_SOURCES) $(RIPNG_SOURCES) $(ZEBRA_SOURCES)
+
+# used in dependency generation
+BUILT_SOURCES = $(SOURCES) main.cpp
+
+MLD_TARGET	= mld.so
+PIM_TARGET	= pim.so
+CONSOLE_TARGET	= console.so
+BGP_TARGET	= bgp.so
+MSNIP_TARGET	= msnip.so
+MRDISC_TARGET	= mrdisc.so
+RIPNG_TARGET	= ripng.so
+ZEBRA_TARGET	= zebra.so
+MLD_EXT_TARGET	= mld_ext.so
+
+EXTERNAL_MODULES = $(foreach module,$(MODULES),$($(module)_TARGET))
 
 TESTS = tests/ptree_unittest tests/mrib_unittest
 
-ifeq ($(NO_INET6_OPTION),yes)
-	CFLAGS += -DNO_INET6_OPTION
-endif
-
 DEST_PREFIX = $(DESTDIR)$(PREFIX)
+
+CXXFLAGS = $(INCLUDES) -ansi -Wall -Wno-multichar -fno-exceptions -fPIC \
+	   -D$(PLATFORM) $(addprefix -D,$(MODULE_OPTIONS))
 
 ifeq ($(OPTIMIZE),yes)
 	ifeq ($(SPACE_OPTIMIZE),yes)
-		CFLAGS += -O3 -Os
+		CXXFLAGS += -O3 -Os
 	else
-		CFLAGS += -O3
+		CXXFLAGS += -O3
 	endif
 else
-	CFLAGS += -g
+	CXXFLAGS += -g
 	ifeq ($(NO_INLINE),yes)
-		CFLAGS += -O0 -fno-inline
+		CXXFLAGS += -O0 -fno-inline
 	else
-		CFLAGS += -O2
-	endif
-endif
-
-MRD_CXXFLAGS = -fno-exceptions -fPIC -D$(PLATFORM)
-
-MODULE_OPTIONS_CXXFLAGS = $(addprefix -D,$(MODULE_OPTIONS))
-
-CXXFLAGS = $(INCLUDES) $(CFLAGS) $(MRD_CXXFLAGS) $(MODULE_OPTIONS_CXXFLAGS)
-
-MLD_OBJECTS = $(MLD_SOURCES:.cpp=.o)
-PIM_OBJECTS = $(PIM_SOURCES:.cpp=.o)
-CONSOLE_OBJECTS = $(CONSOLE_SOURCES:.cpp=.o)
-BGP_OBJECTS = $(BGP_SOURCES:.cpp=.o)
-MSNIP_OBJECTS = $(MSNIP_SOURCES:.cpp=.o)
-MRDISC_OBJECTS = $(MRDISC_SOURCES:.cpp=.o)
-RIPNG_OBJECTS = $(RIPNG_SOURCES:.cpp=.o)
-ZEBRA_OBJECTS = $(ZEBRA_SOURCES:.cpp=.o)
-
-MLD_EXT_OBJECTS = $(MLD_EXT_SOURCES:.cpp=.o)
-
-STATIC_MODULES_CPP = modules.cpp
-
-ifeq ($(GENERATED_MODULE_LIST),no)
-	CXXFLAGS += -DMRD_STATIC_MLD -DMRD_STATIC_PIM -DMRD_STATIC_CONSOLE
-	STATIC_MODULE_SOURCES = $(MLD_SOURCES) $(PIM_SOURCES) $(CONSOLE_SOURCES)
-else
-	STATIC_MODULES_CPP = modules.generated.cpp
-endif
-
-ifneq ($(SUPPORT_MODULES),yes)
-	CXXFLAGS += -DMRD_NO_DYNAMIC_MODULE_LOADING
-endif
-
-ifeq ($(FULL_STATIC),yes)
-	LDCMD = -static
-else
-	ifeq ($(SUPPORT_MODULES),yes)
-		LDCMD = -rdynamic
+		CXXFLAGS += -O2
 	endif
 endif
 
 LDFLAGS += -lm
-ifeq ($(PLATFORM),OS_LINUX)
-	LDFLAGS += -ldl
-endif
 
 ifeq ($(STATIC_STDCXX),no)
 	LDFLAGS += -lstdc++
@@ -115,71 +112,36 @@ else
 	LDFLAGS += `$(CXX) -print-file-name=libstdc++.a`
 endif
 
-LINUX_SOURCES = linux/us_mfa.cpp linux/linux_icmp_raw.cpp \
-		linux/linux_unicast_route.cpp linux/mrd_components.cpp
-
-BSD_SOURCES = bsd/bsd_rib.cpp bsd/bsd_mfa.cpp bsd/mrd_components.cpp
-
-SOURCES = address.cpp address_set.cpp group.cpp icmp_inet6.cpp icmp.cpp \
-	  interface.cpp log.cpp mfa.cpp mrd.cpp mrib.cpp node.cpp \
-	  parser.cpp rib.cpp router.cpp timers.cpp support/objpool.cpp \
-	  support/ptree.cpp
-
-ifeq ($(PLATFORM),OS_LINUX)
-	SOURCES += $(LINUX_SOURCES)
-endif
-
-ifeq ($(PLATFORM),OS_BSD)
-	SOURCES += $(BSD_SOURCES)
-endif
-
-MRD_VERSION_CPP = mrd.version.cpp
-
-TEST_SOURCES = $(SOURCES) $(MRD_VERSION_CPP) no-modules.cpp
 TEST_OBJECTS = $(TEST_SOURCES:.cpp=.o)
-
-MRD_SOURCES = $(SOURCES) main.cpp $(STATIC_MODULES_CPP) \
-	      $(STATIC_MODULE_SOURCES) $(MRD_VERSION_CPP)
-
-ALL_SOURCES = $(MRD_SOURCES)
-
-ifneq (,$(findstring mld.so,$(EXTERNAL_MODULES)))
-	ALL_SOURCES += $(MLD_SOURCES)
-endif
-
-ifneq (,$(findstring pim.so,$(EXTERNAL_MODULES)))
-	ALL_SOURCES += $(PIM_SOURCES)
-endif
-
-ifneq (,$(findstring console.so,$(EXTERNAL_MODULES)))
-	ALL_SOURCES += $(CONSOLE_SOURCES)
-endif
-
-ifneq (,$(findstring bgp.so,$(EXTERNAL_MODULES)))
-	ALL_SOURCES += $(BGP_SOURCES)
-endif
-
-ifneq (,$(findstring msnip.so,$(EXTERNAL_MODULES)))
-	ALL_SOURCES += $(MSNIP_SOURCES)
-endif
-
-ifneq (,$(findstring mrdisc.so,$(EXTERNAL_MODULES)))
-	ALL_SOURCES += $(MRDISC_SOURCES)
-endif
-
-ifneq (,$(findstring ripng.so,$(EXTERNAL_MODULES)))
-	ALL_SOURCES += $(RIPNG_SOURCES)
-endif
-
-ifneq (,$(findstring zebra.so,$(EXTERNAL_MODULES)))
-	ALL_SOURCES += $(ZEBRA_SOURCES)
-endif
-
 MRD_OBJECTS = $(MRD_SOURCES:.cpp=.o)
 
-MODULE_CXX = $(CXX) -shared $(CXXFLAGS)
-
 all: $(TARGET) $(EXTERNAL_MODULES)
+
+define module_template
+BUILT_SOURCES += $$($(1)_SOURCES)
+$$($(1)_TARGET): $$($(1)_SOURCES:.cpp=.o)
+	@echo "Module $$($(1)_TARGET)"
+	@$(CXX) -shared $(CXXFLAGS) -o $$($(1)_TARGET) $$($(1)_SOURCES:.cpp=.o)
+endef
+
+define static_module_template
+BUILT_SOURCES += $$($(1)_SOURCES)
+MRD_OBJECTS += $$($(1)_SOURCES:.cpp=.o)
+endef
+
+define unittest_template
+BUILT_SOURCES += $(1).cpp
+$(1): $(TEST_OBJECTS) $(1).cpp
+	@echo "Linking $(1)"
+	@$(CXX) $(LDCMD) $(CXXFLAGS) -o $(1) $(1).cpp $(TEST_OBJECTS) \
+		$(LDFLAGS) -lboost_unit_test_framework
+endef
+
+# generate the required build rules for each module
+$(foreach module,$(MODULES),$(eval $(call module_template,$(module))))
+$(foreach module,$(STATIC_MODULES),$(eval $(call static_module_template,$(module))))
+# generate the required build rules for each unit test
+$(foreach test,$(TESTS),$(eval $(call unittest_template,$(test))))
 
 $(TARGET): $(OBJECTS) $(MRD_OBJECTS)
 	@echo "Linking $(TARGET)"
@@ -188,60 +150,18 @@ $(TARGET): $(OBJECTS) $(MRD_OBJECTS)
 install: $(TARGET) $(EXTERNAL_MODULES)
 	install -D $(TARGET) $(DEST_PREFIX)/sbin/$(TARGET)
 	install -D ../tools/mrd6sh $(DEST_PREFIX)/bin/mrd6sh
-ifdef EXTERNAL_MODULES
+ifneq (,$(EXTERNAL_MODULES))
 	mkdir -p $(DEST_PREFIX)/lib/mrd6/
 	install -D $(EXTERNAL_MODULES) $(DEST_PREFIX)/lib/mrd6/
 endif
 
-$(MRD_VERSION_CPP): $(SOURCES) Makefile
-	@echo '/* This file is automatically generated */' > $(MRD_VERSION_CPP)
-	@echo 'const char *BuildDate = "$(NOW)";' >> $(MRD_VERSION_CPP)
+mrd.version.cpp: $(SOURCES) Makefile Makefile.options
+	@echo '/* This file is automatically generated */' > mrd.version.cpp
+	@echo 'const char *BuildDate = "$(NOW)";' >> mrd.version.cpp
 
-mld.so: $(MLD_OBJECTS)
-	@echo "Module $@"
-	@$(MODULE_CXX) -o $@ $+
-
-pim.so: $(PIM_OBJECTS)
-	@echo "Module $@"
-	@$(MODULE_CXX) -o $@ $+
-
-console.so: $(CONSOLE_OBJECTS)
-	@echo "Module $@"
-	@$(MODULE_CXX) -o $@ $+
-
-bgp.so: $(BGP_OBJECTS)
-	@echo "Module $@"
-	@$(MODULE_CXX) -o $@ $+
-
-msnip.so: $(MSNIP_OBJECTS)
-	@echo "Module $@"
-	@$(MODULE_CXX) -o $@ $+
-
-mrdisc.so: $(MRDISC_OBJECTS)
-	@echo "Module $@"
-	@$(MODULE_CXX) -o $@ $+
-
-ripng.so: $(RIPNG_OBJECTS)
-	@echo "Module $@"
-	@$(MODULE_CXX) -o $@ $+
-
-zebra.so: $(ZEBRA_OBJECTS)
-	@echo "Module $@"
-	@$(MODULE_CXX) -o $@ $+
-
-mld_ext.so: $(MLD_EXT_OBJECTS)
-	@echo "Module $@"
-	@$(MODULE_CXX) -o $@ $+
-
-define unittest_template
-$(1): $(TEST_OBJECTS) $(1).cpp
-	@echo "Linking $(1)"
-	@$(CXX) $(LDCMD) $(CXXFLAGS) -o $(1) $(1).cpp $(TEST_OBJECTS) \
-		$(LDFLAGS) -lboost_unit_test_framework
-endef
-
-# generate the required build rules for each unit test
-$(foreach test,$(TESTS),$(eval $(call unittest_template,$(test))))
+modules.cpp: Makefile Makefile.options
+	@echo "Generating modules.cpp"
+	@scripts/generate-modules-cpp.pl > modules.cpp
 
 .PHONY: tests
 tests: $(TESTS)
@@ -256,10 +176,12 @@ $(OPTIONS):
 	@set -e; mkdir -p $(dir $@); \
 	$(CXX) -MM -MT $@ -MT $(<:.cpp=.o) $(CXXFLAGS) $< > $@
 
-DEPENDENCIES = $(addprefix .deps/,$(ALL_SOURCES:.cpp=.d))
+DEPENDENCIES = $(addprefix .deps/,$(BUILT_SOURCES:.cpp=.d))
 
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
 	-include $(DEPENDENCIES)
+endif
 endif
 
 %.o: %.cpp $(OPTIONS)
@@ -267,12 +189,11 @@ endif
 	@$(CXX) -c $(CXXFLAGS) $< -o $@
 
 clean:
-	rm -rf .deps $(TARGET) $(MRD_OBJECTS) \
-		$(MLD_OBJECTS) $(PIM_OBJECTS) $(CONSOLE_OBJECTS) \
-		$(BGP_OBJECTS) $(MSNIP_OBJECTS) $(MRDISC_OBJECTS) \
-		$(RIPNG_OBJECTS) $(ZEBRA_OBJECTS) \
-		$(EXTERNAL_MODULES) $(MRD_VERSION_CPP) \
-		$(TESTS)
+	rm -rf $(TARGET) $(TESTS) $(EXTERNAL_MODULES) \
+		$(ALL_SOURCES:.cpp=.o)
 
-.PHONY: install clean
+distclean: clean
+	rm -rf .deps mrd.version.cpp modules.cpp
+
+.PHONY: install clean distclean
 
