@@ -416,23 +416,14 @@ void pim_interface::handle_hello(const sockaddr_in6 *from,
 
 		switch (ntoh(opt->type)) {
 		case pim_hello_option::holdtime:
-			if (optlen == 2) {
-				memcpy(&holdtime, opt->data(), 2);
-				holdtime = ntohs(holdtime);
-			}
+			if (optlen == 2)
+				holdtime = ntoh(opt->data16()[0]);
 			break;
 		case pim_hello_option::lan_prune_delay:
 			if (optlen == 4) {
 				has_lan_delay = true;
-
-				uint16_t *ptr = (uint16_t *)opt->data();
-
-				memcpy(&propdelay, ptr, 2);
-				memcpy(&overrinter, ptr + 1, 2);
-
-				propdelay = ntohs(propdelay);
-				overrinter = ntohs(overrinter);
-
+				propdelay = ntoh(opt->data16()[0]);
+				overrinter = ntoh(opt->data16()[1]);
 				trackbit = (propdelay & 0x8000) != 0;
 				propdelay &= 0x7fff;
 			}
@@ -440,15 +431,13 @@ void pim_interface::handle_hello(const sockaddr_in6 *from,
 		case pim_hello_option::dr_priority:
 			if (optlen == 4) {
 				has_dr_priority = true;
-				memcpy(&dr_priority, opt->data(), 4);
-				dr_priority = ntohl(dr_priority);
+				dr_priority = ntoh(opt->data32()[0]);
 			}
 			break;
 		case pim_hello_option::genid:
 			if (optlen == 4) {
 				has_genid = true;
-				memcpy(&genid, opt->data(), 4);
-				genid = ntohl(genid);
+				genid = ntoh(opt->data32()[0]);
 			}
 			break;
 		case pim_hello_option::addrlist:
