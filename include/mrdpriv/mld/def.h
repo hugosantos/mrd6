@@ -25,9 +25,10 @@
 #ifndef _mrd_mdl_def_h_
 #define _mrd_mdl_def_h_
 
+#include <mrd/support/uint_n.h>
+
 #include <stdint.h>
 #include <sys/types.h>
-#include <netinet/in.h>
 #include <netinet/ip6.h>
 #include <netinet/icmp6.h>
 
@@ -74,10 +75,10 @@ struct mldv1 : icmp6_hdr {
 	int length() const { return sizeof(mldv1); }
 
 	void construct(const in6_addr &, int type, mld_intfconf_node *);
-	void construct_query(const in6_addr &mca, mld_intfconf_node *conf) {
-		construct(mca, MLD_LISTENER_QUERY, conf);
-	}
+} __attribute__ ((packed));
 
+struct mldv1_query : mldv1 {
+	void construct(const in6_addr &, mld_intfconf_node *);
 } __attribute__ ((packed));
 
 /*!
@@ -92,10 +93,10 @@ struct mldv2_query : mldv1 {
 #	error "your system endianness isn't supported yet"
 #endif
 	uint8_t qqic;
-	uint16_t nsrcs;
+	uint16n_t nsrcs;
 	in6_addr srcs[0];
 
-	int length() const { return sizeof(mldv1) + 4 + ntohs(nsrcs) * sizeof(in6_addr); }
+	int length() const { return sizeof(mldv1) + 4 + ntoh(nsrcs) * sizeof(in6_addr); }
 
 	void construct(const in6_addr &, int type, mld_intfconf_node *);
 	void construct_query(const in6_addr &mca, mld_intfconf_node *conf) {
@@ -110,7 +111,7 @@ struct mldv2_query : mldv1 {
 struct mldv2_mrec {
 	uint8_t type;
 	uint8_t auxdatalen;
-	uint16_t nsrcs;
+	uint16n_t nsrcs;
 	in6_addr mca;
 
 	in6_addr *sources() {
@@ -118,7 +119,9 @@ struct mldv2_mrec {
 	}
 
 	mldv2_mrec *next() {
-		return (mldv2_mrec *)(((uint8_t *)this) + sizeof(*this) + nsrcs * sizeof(in6_addr) + auxdatalen);
+		return (mldv2_mrec *)
+			(((uint8_t *)this) + sizeof(*this) +
+				ntoh(nsrcs) * sizeof(in6_addr) + auxdatalen);
 	}
 } __attribute__ ((packed));
 
@@ -126,7 +129,7 @@ struct mldv2_mrec {
  * \brief A MLDv2 Report header. Derives from ICMPv6 header.
  */
 struct mldv2_report : icmp6_hdr {
-	uint16_t nmrecs() const { return icmp6_data16[1]; }
+	const uint16n_t &nmrecs() const { return *(uint16n_t *)&icmp6_data16[1]; }
 
 	mldv2_mrec *mrecs() {
 		return (mldv2_mrec *)(((uint8_t *)this) + sizeof(*this));

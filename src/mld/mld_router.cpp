@@ -334,10 +334,10 @@ bool mld_interface::send_mldv2_query(const in6_addr &addr) {
 }
 
 bool mld_interface::send_mldv1_query(const in6_addr &addr) {
-	mldv1 query;
-	query.construct_query(addr, conf());
+	mldv1_query q;
+	q.construct(addr, conf());
 	return mld->send_icmp(owner(), in6addr_linkscope_allnodes,
-			      &query, query.length());
+			      &q, q.length());
 }
 
 bool mld_interface::send_mld_query(const in6_addr &addr, const std::set<in6_addr> &sources) {
@@ -346,7 +346,7 @@ bool mld_interface::send_mld_query(const in6_addr &addr, const std::set<in6_addr
 
 		query->construct_query(addr, conf());
 
-		query->nsrcs = htons(sources.size());
+		query->nsrcs = hton((uint16_t)sources.size());
 
 		in6_addr *addr = g_mrd->opktb->header<in6_addr>(sizeof(mldv2_query));
 
@@ -477,14 +477,12 @@ void mld_interface::handle_mldv2_membership_report(const in6_addr &src,
 	mldv2_mrec *mrec = mldhdr->mrecs();
 	int clen = 0;
 
-	int reccount = ntohs(mldhdr->nmrecs());
+	int reccount = ntoh(mldhdr->nmrecs());
 
 	for (int i = 0; i < reccount && clen < len; i++, mrec = mrec->next()) {
-		mrec->nsrcs = ntohs(mrec->nsrcs);
 		clen += sizeof(mldv2_mrec);
-		if (clen <= len) {
-			clen += sizeof(in6_addr) * mrec->nsrcs;
-		}
+		if (clen <= len)
+			clen += sizeof(in6_addr) * ntoh(mrec->nsrcs);
 	}
 
 	if (clen > len) {
@@ -498,17 +496,15 @@ void mld_interface::handle_mldv2_membership_report(const in6_addr &src,
 
 	mrec = mldhdr->mrecs();
 	for (int i = 0; i < reccount; i++, mrec = mrec->next()) {
-		if (!IN6_IS_ADDR_MULTICAST(&mrec->mca)
-			|| IN6_IS_ADDR_MC_NODELOCAL(&mrec->mca)
-			|| IN6_IS_ADDR_MC_LINKLOCAL(&mrec->mca)) {
+		if (!IN6_IS_ADDR_MULTICAST(&mrec->mca) ||
+		     IN6_IS_ADDR_MC_NODELOCAL(&mrec->mca) ||
+		     IN6_IS_ADDR_MC_LINKLOCAL(&mrec->mca))
 			continue;
-		}
 
 		address_set sources;
 		in6_addr *srcs = mrec->sources();
-		for (uint16_t j = 0; j < mrec->nsrcs; j++) {
+		for (uint16_t j = 0; j < ntoh(mrec->nsrcs); j++)
 			sources += srcs[j];
-		}
 
 		handle_mode_change_for_group(2, src, mrec->mca, mrec->type, sources);
 	}

@@ -45,6 +45,10 @@ void mldv1::construct(const in6_addr &addr, int _type, mld_intfconf_node *n) {
 	mcaddr = addr;
 }
 
+void mldv1_query::construct(const in6_addr &mcaddr, mld_intfconf_node *node) {
+	mldv1::construct(mcaddr, MLD_LISTENER_QUERY, node);
+}
+
 void mldv2_query::construct(const in6_addr &addr, int type, mld_intfconf_node *n) {
 	mldv1::construct(addr, type, n);
 
@@ -68,6 +72,6 @@ void mldv2_query::construct(const in6_addr &addr, int type, mld_intfconf_node *n
 		qqic = 0x80 | (exp << 4) | qis;
 	}
 
-	nsrcs = 0;
+	nsrcs = hton((uint16_t)0);
 }
 
