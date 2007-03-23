@@ -219,6 +219,13 @@ bgp_update_message::bgp_update_message(const bgp_message &msg)
 	: bgp_message(msg) {
 }
 
+static void read_uint32(encoding_buffer &b, uint32_t *target, int len) {
+	if (len == 4)
+		(*target) = ntoh(b.eat<uint32n_t>());
+	else
+		b.eat(len);
+}
+
 bool bgp_update_message::decode(encoding_buffer &b) {
 	uint16_t url = ntoh(b.eat<uint16n_t>());
 	b.eat(url);
@@ -236,11 +243,18 @@ bool bgp_update_message::decode(encoding_buffer &b) {
 		else
 			len = b.eat<uint8_t>();
 
-		if (type == ORIGIN) {
+		int avail;
+		uint16_t family;
+		uint8_t subfamily;
+
+		switch (type) {
+		case ORIGIN:
 			origin = b.eat<uint8_t>();
 			b.eat(len - 1);
-		} else if (type == AS_PATH) {
-			int avail = len;
+			break;
+
+		case AS_PATH:
+			avail = len;
 			while (avail >= 2) {
 				uint8_t segtype = b.eat<uint8_t>();
 				uint16_t seglen = b.eat<uint8_t>();
@@ -253,23 +267,25 @@ bool bgp_update_message::decode(encoding_buffer &b) {
 				avail -= 2 * seglen + 2;
 			}
 			b.eat(avail);
-		} else if (type == MULTI_EXIT_DISC) {
-			if (len == 4)
-				med = ntoh(b.eat<uint32n_t>());
-			else
-				b.eat(len);
-		} else if (type == LOCAL_PREF) {
-			if (len == 4)
-				localpref = ntoh(b.eat<uint32n_t>());
-			else
-				b.eat(len);
-		} else if (type == COMMUNITIES) {
+			break;
+
+		case MULTI_EXIT_DISC:
+			read_uint32(b, &med, len);
+			break;
+
+		case LOCAL_PREF:
+			read_uint32(b, &localpref, len);
+			break;
+
+		case COMMUNITIES:
 			for (uint8_t j = 0; j < len; j += 4)
 				communities.push_back(bgp_community(ntoh(b.eat<uint16n_t>()),
 								    ntoh(b.eat<uint16n_t>())));
-		} else if (type == MP_REACH_NLRI) {
-			uint16_t family = ntoh(b.eat<uint16n_t>());
-			uint8_t subfamily = b.eat<uint8_t>();
+			break;
+
+		case MP_REACH_NLRI:
+			family = ntoh(b.eat<uint16n_t>());
+			subfamily = b.eat<uint8_t>();
 
 			if (family == IPV6_AFI && subfamily == MULTICAST_SAFI) {
 				// NextHop
@@ -302,9 +318,11 @@ bool bgp_update_message::decode(encoding_buffer &b) {
 			} else {
 				b.eat(len - 3);
 			}
-		} else if (type == MP_UNREACH_NLRI) {
-			uint16_t family = ntoh(b.eat<uint16n_t>());
-			uint8_t subfamily = b.eat<uint8_t>();
+			break;
+
+		case MP_UNREACH_NLRI:
+			family = ntoh(b.eat<uint16n_t>());
+			subfamily = b.eat<uint8_t>();
 
 			if (family == IPV6_AFI && subfamily == MULTICAST_SAFI) {
 				// Prefixes
@@ -314,9 +332,8 @@ bool bgp_update_message::decode(encoding_buffer &b) {
 
 					prefix.prefixlen = b.eat<uint8_t>();
 					int plen = prefix.prefixlen / 8;
-					if (prefix.prefixlen & 0x7) {
+					if (prefix.prefixlen & 0x7)
 						plen++;
-					}
 
 					memcpy(&prefix.addr, b.eat(plen), plen);
 					avail -= 1 + plen;
@@ -326,8 +343,11 @@ bool bgp_update_message::decode(encoding_buffer &b) {
 			} else {
 				b.eat(len - 3);
 			}
-		} else {
+			break;
+
+		default:
 			b.eat(len);
+			break;
 		}
 
 		i += len + 3 + ((flags & 0x10) ? 1 : 0);
@@ -343,7 +363,8 @@ uint16_t bgp_update_message::length() const {
 		+ (communities.empty() ? 0 : (3 + 4 * communities.size())) // communities
 		+ (3 + 3 + (1 + 16 * nexthops.size()) + (1)); // mp_reach_nlri
 
-	for (std::vector<inet6_addr>::const_iterator i = prefixes.begin(); i != prefixes.end(); i++) {
+	for (std::vector<inet6_addr>::const_iterator i = prefixes.begin();
+						i != prefixes.end(); ++i) {
 		length += i->prefixlen / 8;
 		if (i->prefixlen & 0x7)
 			length++;
