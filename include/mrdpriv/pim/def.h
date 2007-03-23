@@ -183,34 +183,7 @@ struct pim_register_stop_message : pim_message {
 	void construct(const inet6_addr &, const inet6_addr &);
 } __attribute__ ((packed));
 
-struct pim_jp_g_iterator {
-	typedef std::forward_iterator_tag iterator_category;
-	typedef pim_encoded_source_address value_type;
-	typedef ptrdiff_t difference_type;
-	typedef pim_encoded_source_address *pointer;
-	typedef pim_encoded_source_address &reference;
-
-	pim_jp_g_iterator(pointer src) : current(src) {}
-
-	reference operator *() const { return *current; }
-	pointer operator->() const { return current; }
-
-	pim_jp_g_iterator &operator++() { current++; return *this; }
-	pim_jp_g_iterator operator+(int) { return ++pim_jp_g_iterator(*this); }
-
-	friend bool operator == (const pim_jp_g_iterator &a,
-				 const pim_jp_g_iterator &b) {
-		return a.current == b.current;
-	}
-
-	friend bool operator != (const pim_jp_g_iterator &a,
-				 const pim_jp_g_iterator &b) {
-		return a.current != b.current;
-	}
-
-private:
-	pointer current;
-};
+typedef pim_encoded_source_address *pim_jp_g_iterator;
 
 struct pim_joinprune_group {
 	pim_encoded_group_address maddr;
