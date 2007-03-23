@@ -28,9 +28,9 @@
 #include <mrdpriv/mld/router.h>
 
 void mldv1::construct(const in6_addr &addr, int _type, mld_intfconf_node *n) {
-	memset(this, 0, sizeof(icmp6_hdr));
-
-	icmp6_type = _type;
+	type = _type;
+	code = 0;
+	checksum = 0;
 
 	/* General Query
 	 *   max_response_delay = [Query Response Interval]
@@ -38,9 +38,11 @@ void mldv1::construct(const in6_addr &addr, int _type, mld_intfconf_node *n) {
 	 *   max_response_delay = [Last Listener Query Interval] */
 
 	if (IN6_IS_ADDR_UNSPECIFIED(&addr))
-		icmp6_maxdelay = htons(n->query_response_interval());
+		maxdelay = hton((uint16_t)n->query_response_interval());
 	else
-		icmp6_maxdelay = htons(n->last_listener_query_interval());
+		maxdelay = hton((uint16_t)n->last_listener_query_interval());
+
+	data = hton((uint16_t)0);
 
 	mcaddr = addr;
 }

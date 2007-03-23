@@ -330,14 +330,14 @@ bool mld_interface::send_mldv2_query(const in6_addr &addr) {
 	mldv2_query query;
 	query.construct_query(addr, conf());
 	return mld->send_icmp(owner(), in6addr_linkscope_allnodes,
-			      &query, query.length());
+			      (icmp6_hdr *)&query, query.length());
 }
 
 bool mld_interface::send_mldv1_query(const in6_addr &addr) {
 	mldv1_query q;
 	q.construct(addr, conf());
 	return mld->send_icmp(owner(), in6addr_linkscope_allnodes,
-			      &q, q.length());
+			      (icmp6_hdr *)&q, q.length());
 }
 
 bool mld_interface::send_mld_query(const in6_addr &addr, const std::set<in6_addr> &sources) {
@@ -357,7 +357,7 @@ bool mld_interface::send_mld_query(const in6_addr &addr, const std::set<in6_addr
 		}
 
 		if (mld->send_icmp(owner(), in6addr_linkscope_allnodes,
-				   query, query->length())) {
+				   (icmp6_hdr *)query, query->length())) {
 			m_stats.counter(QueryCount, TX)++;
 			mld->stats().counter(QueryCount, TX)++;
 			return true;

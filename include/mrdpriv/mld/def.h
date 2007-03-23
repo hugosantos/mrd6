@@ -67,9 +67,18 @@ extern in6_addr in6addr_linkscope_allnodes;
 class interface;
 
 /*!
- * \brief MLDv1 header. derives from ICMPv6 header.
+ * \brief MLD base header.
  */
-struct mldv1 : icmp6_hdr {
+struct mld_base {
+	uint8_t type;
+	uint8_t code;
+	uint16_t checksum;
+
+	uint16n_t maxdelay;
+	uint16n_t data;
+} __attribute__ ((packed));
+
+struct mldv1 : mld_base {
 	in6_addr mcaddr;
 
 	int length() const { return sizeof(mldv1); }
@@ -82,7 +91,7 @@ struct mldv1_query : mldv1 {
 } __attribute__ ((packed));
 
 /*!
- * \brief MLDv2 Query header. derives from MLDv1 header.
+ * \brief MLDv2 Query header. derives from MLD header.
  */
 struct mldv2_query : mldv1 {
 #if BYTE_ORDER == LITTLE_ENDIAN
@@ -126,10 +135,10 @@ struct mldv2_mrec {
 } __attribute__ ((packed));
 
 /*!
- * \brief A MLDv2 Report header. Derives from ICMPv6 header.
+ * \brief A MLDv2 Report header. Derives from MLD base header.
  */
-struct mldv2_report : icmp6_hdr {
-	const uint16n_t &nmrecs() const { return *(uint16n_t *)&icmp6_data16[1]; }
+struct mldv2_report : mld_base {
+	const uint16n_t &nmrecs() const { return data; }
 
 	mldv2_mrec *mrecs() {
 		return (mldv2_mrec *)(((uint8_t *)this) + sizeof(*this));
