@@ -24,6 +24,7 @@
 
 #include <mrd/log.h>
 #include <mrd/packet_buffer.h>
+#include <mrd/support/uint_n.h>
 
 #include <mrdpriv/bgp/def.h>
 
@@ -55,6 +56,12 @@ enum {
 	MULTICAST_SAFI = 2,
 };
 
+struct bgp_base_header {
+	uint8_t marker[16];
+	uint16n_t length;
+	uint8_t type;
+} __attribute__ ((packed));
+
 static const uint8_t good_marker[] = {
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
@@ -77,13 +84,13 @@ bool bgp_message::decode(encoding_buffer &buff) {
 	if (!buff.require(19))
 		return false;
 
-	uint8_t *head = buff.head();
+	bgp_base_header *h = (bgp_base_header *)buff.head();
 
-	if (memcmp(head, good_marker, 16) != 0)
+	if (memcmp(h->marker, good_marker, 16) != 0)
 		return false;
 
-	len = ntohs(*(uint16_t *)(head + 16));
-	type = head[18];
+	len = ntoh(h->length);
+	type = h->type;
 
 	if (!buff.require(len))
 		return false;
@@ -98,7 +105,7 @@ bool bgp_message::encode(encoding_buffer &buff) const {
 		return false;
 
 	memcpy(buff.put(16), good_marker, 16);
-	buff.put<uint16_t>() = htons(length());
+	buff.put<uint16n_t>() = hton(length());
 	buff.put<uint8_t>() = type;
 
 	return true;
@@ -137,9 +144,9 @@ uint16_t bgp_open_message::length() const {
 
 bool bgp_open_message::decode(encoding_buffer &b) {
 	version = b.eat<uint8_t>();
-	as = ntohs(b.eat<uint16_t>());
-	holdtime = ntohs(b.eat<uint16_t>());
-	bgpid = ntohl(b.eat<uint32_t>());
+	as = ntoh(b.eat<uint16n_t>());
+	holdtime = ntoh(b.eat<uint16n_t>());
+	bgpid = ntoh(b.eat<uint32n_t>());
 
 	uint32_t extralen = b.eat<uint8_t>();
 
@@ -153,7 +160,7 @@ bool bgp_open_message::decode(encoding_buffer &b) {
 
 			if (code == 1 && ((codelen % 4) == 0)) {
 				for (uint32_t j = 0; j < codelen; j += 4) {
-					uint16_t family = ntohs(b.eat<uint16_t>());
+					uint16_t family = ntoh(b.eat<uint16n_t>());
 					b.eat(1);
 					uint8_t subfamily = b.eat<uint8_t>();
 					capabilities.push_back(capability(family, subfamily));
@@ -175,9 +182,9 @@ bool bgp_open_message::encode(encoding_buffer &b) const {
 	if (!bgp_message::encode(b))
 		return false;
 	b.put<uint8_t>() = version;
-	b.put<uint16_t>() = htons(as);
-	b.put<uint16_t>() = htons(holdtime);
-	b.put<uint32_t>() = htonl(bgpid);
+	b.put<uint16n_t>() = hton(as);
+	b.put<uint16n_t>() = hton(holdtime);
+	b.put<uint32n_t>() = hton(bgpid);
 
 	if (capabilities.empty()) {
 		b.put<uint8_t>() = 0;
@@ -192,7 +199,7 @@ bool bgp_open_message::encode(encoding_buffer &b) const {
 
 		for (std::vector<capability>::const_iterator i = capabilities.begin();
 				i != capabilities.end(); i++) {
-			b.put<uint16_t>() = htons(i->first);
+			b.put<uint16n_t>() = hton(i->first);
 			b.put<uint8_t>() = 0;
 			b.put<uint8_t>() = i->second;
 		}
@@ -213,10 +220,10 @@ bgp_update_message::bgp_update_message(const bgp_message &msg)
 }
 
 bool bgp_update_message::decode(encoding_buffer &b) {
-	uint16_t url = ntohs(b.eat<uint16_t>());
+	uint16_t url = ntoh(b.eat<uint16n_t>());
 	b.eat(url);
 
-	uint32_t tpal = ntohs(b.eat<uint16_t>());
+	uint32_t tpal = ntoh(b.eat<uint16n_t>());
 
 	uint32_t i = 0;
 	while (i < tpal) {
@@ -225,7 +232,7 @@ bool bgp_update_message::decode(encoding_buffer &b) {
 		uint16_t len;
 
 		if (flags & 0x10)
-			len = ntohs(b.eat<uint16_t>());
+			len = ntoh(b.eat<uint16n_t>());
 		else
 			len = b.eat<uint8_t>();
 
@@ -238,9 +245,8 @@ bool bgp_update_message::decode(encoding_buffer &b) {
 				uint8_t segtype = b.eat<uint8_t>();
 				uint16_t seglen = b.eat<uint8_t>();
 				if (segtype == AS_SEQUENCE) {
-					for (uint16_t j = 0; j < seglen; j++) {
-						as_path.push_back(ntohs(b.eat<uint16_t>()));
-					}
+					for (uint16_t j = 0; j < seglen; j++)
+						as_path.push_back(ntoh(b.eat<uint16n_t>()));
 				} else {
 					b.eat(2 * seglen);
 				}
@@ -248,24 +254,21 @@ bool bgp_update_message::decode(encoding_buffer &b) {
 			}
 			b.eat(avail);
 		} else if (type == MULTI_EXIT_DISC) {
-			if (len == 4) {
-				med = ntohl(b.eat<uint32_t>());
-			} else {
+			if (len == 4)
+				med = ntoh(b.eat<uint32n_t>());
+			else
 				b.eat(len);
-			}
 		} else if (type == LOCAL_PREF) {
-			if (len == 4) {
-				localpref = ntohl(b.eat<uint32_t>());
-			} else {
+			if (len == 4)
+				localpref = ntoh(b.eat<uint32n_t>());
+			else
 				b.eat(len);
-			}
 		} else if (type == COMMUNITIES) {
-			for (uint8_t j = 0; j < len; j += 4) {
-				communities.push_back(bgp_community(ntohs(b.eat<uint16_t>()),
-									ntohs(b.eat<uint16_t>())));
-			}
+			for (uint8_t j = 0; j < len; j += 4)
+				communities.push_back(bgp_community(ntoh(b.eat<uint16n_t>()),
+								    ntoh(b.eat<uint16n_t>())));
 		} else if (type == MP_REACH_NLRI) {
-			uint16_t family = ntohs(b.eat<uint16_t>());
+			uint16_t family = ntoh(b.eat<uint16n_t>());
 			uint8_t subfamily = b.eat<uint8_t>();
 
 			if (family == IPV6_AFI && subfamily == MULTICAST_SAFI) {
@@ -300,7 +303,7 @@ bool bgp_update_message::decode(encoding_buffer &b) {
 				b.eat(len - 3);
 			}
 		} else if (type == MP_UNREACH_NLRI) {
-			uint16_t family = ntohs(b.eat<uint16_t>());
+			uint16_t family = ntoh(b.eat<uint16n_t>());
 			uint8_t subfamily = b.eat<uint8_t>();
 
 			if (family == IPV6_AFI && subfamily == MULTICAST_SAFI) {
@@ -358,8 +361,8 @@ bool bgp_update_message::encode(encoding_buffer &b) const {
 	len -= bgp_message::length();
 	len -= 2 + 2;
 
-	b.put<uint16_t>() = 0;
-	b.put<uint16_t>() = htons(len);
+	b.put<uint16n_t>() = hton((uint16_t)0);
+	b.put<uint16n_t>() = hton(len);
 
 	b.put<uint8_t>() = 0x40;
 	b.put<uint8_t>() = ORIGIN;
@@ -373,7 +376,7 @@ bool bgp_update_message::encode(encoding_buffer &b) const {
 	b.put<uint8_t>() = as_path.size();
 	for (bgp_as_path::const_iterator i = as_path.begin();
 					i != as_path.end(); ++i)
-		b.put<uint16_t>() = htons(*i);
+		b.put<uint16n_t>() = hton(*i);
 
 	if (!communities.empty()) {
 		b.put<uint8_t>() = 0xc0;
@@ -381,8 +384,8 @@ bool bgp_update_message::encode(encoding_buffer &b) const {
 		b.put<uint8_t>() = 4 * communities.size();
 		for (std::vector<bgp_community>::const_iterator i =
 			communities.begin(); i != communities.end(); ++i) {
-			b.put<uint16_t>() = htons(i->first);
-			b.put<uint16_t>() = htons(i->second);
+			b.put<uint16n_t>() = hton(i->first);
+			b.put<uint16n_t>() = hton(i->second);
 		}
 	}
 
@@ -391,7 +394,7 @@ bool bgp_update_message::encode(encoding_buffer &b) const {
 	uint8_t &nlri_len = b.put<uint8_t>();
 	nlri_len = 2 + 1 + (1 + 16 * nexthops.size()) + 1;
 
-	b.put<uint16_t>() = htons(IPV6_AFI);
+	b.put<uint16n_t>() = hton((uint16_t)IPV6_AFI);
 	b.put<uint8_t>() = MULTICAST_SAFI;
 
 	b.put<uint8_t>() = 16 * nexthops.size();
