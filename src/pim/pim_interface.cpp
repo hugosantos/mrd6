@@ -412,9 +412,9 @@ void pim_interface::handle_hello(const sockaddr_in6 *from,
 	pim_hello_option *opt = msg->options();
 
 	while (slen < len) {
-		uint16_t optlen = ntohs(opt->length);
+		uint16_t optlen = ntoh(opt->length);
 
-		switch (ntohs(opt->type)) {
+		switch (ntoh(opt->type)) {
 		case pim_hello_option::holdtime:
 			if (optlen == 2) {
 				memcpy(&holdtime, opt->data(), 2);
@@ -578,19 +578,29 @@ void pim_interface::handle_joinprune(const sockaddr_in6 *_from, pim_joinprune_me
 			inet6_addr srcaddr(addr->addr, addr->masklen);
 
 			if (addr->wc() && addr->rpt()) {
-				if (!info || info->get_property_address("accept_rp").matches(srcaddr)) {
+				bool accept_rp = true;
+
+				if (info)
+					accept_rp = info->get_property_address
+							("accept_rp").matches(srcaddr);
+
+				if (accept_rp) {
 					address_set prunes;
 
 					grp->pruned_addrs(prunes);
 
-					handle_join_wc_rpt(groupaddr, srcaddr, prunes, ntohs(msg->holdtime), addr->rpt());
+					handle_join_wc_rpt(groupaddr, srcaddr,
+							   prunes, msg->holdtime(),
+							   addr->rpt());
 				} else {
 					/// 3.2.2.1.1
 				}
 			} else if (!addr->wc() && !addr->rpt()) {
-				handle_join_source(groupaddr, srcaddr, ntohs(msg->holdtime) * 1000, addr->rpt());
+				handle_join_source(groupaddr, srcaddr,
+						   msg->holdtime(), addr->rpt());
 			} else {
-				handle_join(groupaddr, srcaddr, ntohs(msg->holdtime) * 1000, addr->rpt());
+				handle_join(groupaddr, srcaddr,
+					    msg->holdtime(), addr->rpt());
 			}
 		}
 
@@ -603,7 +613,7 @@ void pim_interface::handle_joinprune(const sockaddr_in6 *_from, pim_joinprune_me
 					state = node->get_state(srcaddr, addr->rpt());
 
 					if (state) {
-						state->set_oif(owner(), ntohs(msg->holdtime) * 1000, false);
+						state->set_oif(owner(), msg->holdtime(), false);
 					}
 				} else if (addr->wc() && addr->rpt()) {
 					if (node->has_wildcard() && node->rpaddr() == srcaddr) {
@@ -616,7 +626,8 @@ void pim_interface::handle_joinprune(const sockaddr_in6 *_from, pim_joinprune_me
 }
 
 void pim_interface::handle_external_joinprune(const sockaddr_in6 *_from,
-				pim_joinprune_message *msg, uint16_t len) {
+					      pim_joinprune_message *msg,
+					      uint16_t len) {
 	uint16_t j, njs, nps;
 	pim_group_node *node;
 	pim_encoded_source_address *addr;
@@ -625,7 +636,7 @@ void pim_interface::handle_external_joinprune(const sockaddr_in6 *_from,
 	if (!upneigh)
 		return;
 
-	uint32_t holdtime = ntohs(msg->holdtime) * 1000;
+	uint32_t holdtime = msg->holdtime();
 
 	pim_joinprune_group *grp = msg->groups();
 
@@ -913,9 +924,9 @@ void pim_interface::handle_assert(const sockaddr_in6 *from, pim_assert_message *
 	inet6_addr grpaddr(msg->gaddr.addr, msg->gaddr.masklen);
 	pim_group_node *node = pim->get_group(grpaddr);
 
-	bool rpt = ntohl(msg->metric_pref) & 0x80000000;
-	uint32_t metric_pref = ntohl(msg->metric_pref) & 0x7fffffff;
-	uint32_t metric = ntohl(msg->metric);
+	bool rpt = msg->rpt();
+	uint32_t metric_pref = msg->metric_pref();
+	uint32_t metric = ntoh(msg->metric);
 
 	if (node) {
 		if (!IN6_IS_ADDR_UNSPECIFIED(&msg->saddr.addr)) {

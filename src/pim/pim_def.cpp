@@ -29,12 +29,6 @@
 #define _BIT(x)		(1 << (x))
 #define _TEST(x, y)	(((x) & _BIT(y)) != 0)
 
-#define _unaligned_set_u16(x, y)	memcpy(&(x), &(y), sizeof(uint16_t))
-#define _unaligned_set_u32(x, y)	memcpy(&(x), &(y), sizeof(uint32_t))
-
-#define _unaligned_copy_u16(x, y)	memcpy(x, &(y), sizeof(uint16_t))
-#define _unaligned_copy_u32(x, y)	memcpy(x, &(y), sizeof(uint32_t))
-
 void pim_message::construct(pim_msg_type t) {
 	vt = 0x20 | t;
 	resv1 = 0;
@@ -79,45 +73,29 @@ bool pim_message::has_valid_checksum(const in6_addr &src, const in6_addr &dst, i
 }
 
 void pim_hello_option::construct(uint16_t t, uint16_t l) {
-	t = htons(t);
-	l = htons(l);
-
-	/* to prevent un-aligned accesses */
-	_unaligned_set_u16(type, t);
-	_unaligned_set_u16(length, l);
+	type = hton(t);
+	length = hton(l);
 }
 
 void pim_hello_option::add_uint16(uint16_t type, uint16_t value) {
 	construct(type, 2);
-
-	value = htons(value);
-
-	_unaligned_copy_u16(data(), value);
+	data16()[0] = hton(value);
 }
 
 void pim_hello_option::add_uint16pair(uint16_t type, uint16_t v1,
-					     uint16_t v2) {
+				      uint16_t v2) {
 	construct(type, 4);
-
-	uint16_t *d = (uint16_t *)data();
-
-	v1 = htons(v1);
-	v2 = htons(v2);
-
-	_unaligned_copy_u16(d, v1);
-	_unaligned_copy_u16(d + 1, v2);
+	data16()[0] = hton(v1);
+	data16()[1] = hton(v2);
 }
 
 void pim_hello_option::add_uint32(uint16_t type, uint32_t value) {
 	construct(type, 4);
-
-	value = htonl(value);
-
-	_unaligned_copy_u32(data(), value);
+	data32()[0] = hton(value);
 }
 
 pim_hello_option *pim_hello_option::next() const {
-	return (pim_hello_option *)(((uint8_t *)this) + sizeof(*this) + ntohs(length));
+	return (pim_hello_option *)(((uint8_t *)this) + sizeof(*this) + ntoh(length));
 }
 
 void *pim_hello_option::data() {
@@ -135,11 +113,12 @@ pim_hello_option *pim_hello_message::options() {
 void pim_register_message::construct(bool border, bool null) {
 	pim_message::construct(pim_msg_register);
 
-	nb = 0;
+	uint32_t flags = 0;
 	if (border)
-		nb |= _BIT(31);
+		flags |= _BIT(31);
 	if (null)
-		nb |= _BIT(30);
+		flags |= _BIT(30);
+	nb = hton(flags);
 }
 
 ip6_hdr *pim_register_message::ip6_header() {
@@ -147,11 +126,11 @@ ip6_hdr *pim_register_message::ip6_header() {
 }
 
 bool pim_register_message::border() const {
-	return _TEST(ntohl(nb), 31);
+	return _TEST(ntoh(nb), 31);
 }
 
 bool pim_register_message::null() const {
-	return _TEST(ntohl(nb), 30);
+	return _TEST(ntoh(nb), 30);
 }
 
 void pim_encoded_unicast_address::construct(const in6_addr &ma) {
@@ -250,20 +229,16 @@ void pim_register_stop_message::construct(const inet6_addr &ga, const inet6_addr
 
 void pim_joinprune_group::construct(const inet6_addr &addr, uint16_t js, uint16_t ps) {
 	maddr.construct(addr);
-
-	js = htons(js);
-	ps = htons(ps);
-
-	_unaligned_set_u16(njoins, js);
-	_unaligned_set_u16(nprunes, ps);
+	njoins = hton(js);
+	nprunes = hton(ps);
 }
 
 uint16_t pim_joinprune_group::join_count() const {
-	return ntohs(njoins);
+	return ntoh(njoins);
 }
 
 uint16_t pim_joinprune_group::prune_count() const {
-	return ntohs(nprunes);
+	return ntoh(nprunes);
 }
 
 pim_encoded_source_address *pim_joinprune_group::addrs() const {
@@ -317,14 +292,11 @@ void pim_joinprune_message::construct(const inet6_addr &neigh, uint8_t groups, u
 	upstream_neigh.construct(neigh);
 	resv1 = 0;
 	ngroups = groups;
-
-	time = htons(time);
-
-	_unaligned_set_u16(holdtime, time);
+	ht = hton(time);
 }
 
-pim_joinprune_group *pim_joinprune_message::groups() const {
-	return (pim_joinprune_group *)(((uint8_t *)this) + sizeof(*this));
+uint32_t pim_joinprune_message::holdtime() const {
+	return (uint32_t)ntoh(ht) * 1000;
 }
 
 uint16_t pim_joinprune_message::length() const {
@@ -334,6 +306,10 @@ uint16_t pim_joinprune_message::length() const {
 		len += grp->length();
 	}
 	return len;
+}
+
+pim_joinprune_group *pim_joinprune_message::groups() const {
+	return (pim_joinprune_group *)(((uint8_t *)this) + sizeof(*this));
 }
 
 pim_bootstrap_rp_record *pim_bootstrap_group_def::rps() const {
@@ -352,9 +328,7 @@ void pim_bootstrap_message::construct(uint16_t frag, uint8_t ml, uint8_t prio,
 				      const in6_addr &addr) {
 	pim_message::construct(pim_msg_bootstrap);
 
-	frag = htons(frag);
-	_unaligned_set_u16(fragment, frag);
-
+	fragment = hton(frag);
 	hash_masklen = ml;
 	bsr_priority = prio;
 	bsr_address.construct(addr);
@@ -370,9 +344,7 @@ void pim_candidate_rp_adv_message::construct(uint8_t pfxct, uint8_t prio,
 
 	prefixcount = pfxct;
 	priority = prio;
-
-	ht = htons(ht);
-	_unaligned_set_u16(holdtime, ht);
+	holdtime = hton(ht);
 
 	rp_addr.construct(addr);
 }
@@ -386,25 +358,26 @@ uint16_t pim_candidate_rp_adv_message::length() const {
 }
 
 void pim_assert_message::construct(const inet6_addr &grp, const in6_addr &src,
-				   bool _rpt, uint32_t metpref, uint32_t met) {
+				   bool _rpt, uint32_t pref, uint32_t met) {
 	pim_message::construct(pim_msg_assert);
 
 	gaddr.construct(grp);
 	saddr.construct(src);
 
-	metpref &= ~_BIT(31);
+	pref &= ~_BIT(31);
 	if (_rpt)
-		metpref |= _BIT(31);
+		pref |= _BIT(31);
 
-	metpref = htonl(metpref);
-	met = htonl(met);
-
-	_unaligned_set_u32(metric_pref, metpref);
-	_unaligned_set_u32(metric, met);
+	metpref = hton(pref);
+	metric = hton(met);
 }
 
 bool pim_assert_message::rpt() const {
-	return _TEST(ntohl(metric_pref), 31);
+	return _TEST(ntoh(metpref), 31);
+}
+
+uint32_t pim_assert_message::metric_pref() const {
+	return ntoh(metpref) & ~_BIT(31);
 }
 
 static void _do_encoded_address(base_stream &os, const char *type,
@@ -419,7 +392,7 @@ static void _do_encoded_address(base_stream &os, const char *type,
 
 void _debug_pim_dump(base_stream &os, const pim_joinprune_message &msg) {
 	os.xprintf("PIM J/P for %{addr} with holdtime %u\n",
-		   msg.upstream_neigh.addr, (uint32_t)ntohs(msg.holdtime));
+		   msg.upstream_neigh.addr, msg.holdtime());
 
 	int i, j;
 	pim_joinprune_group *grp = msg.groups();
@@ -433,10 +406,10 @@ void _debug_pim_dump(base_stream &os, const pim_joinprune_message &msg) {
 
 		pim_encoded_source_address *addr = grp->addrs();
 
-		for (j = 0; j < ntohs(grp->njoins); j++, addr++)
+		for (j = 0; j < ntoh(grp->njoins); j++, addr++)
 			_do_encoded_address(os, "Join", *addr);
 
-		for (j = 0; j < ntohs(grp->nprunes); j++, addr++)
+		for (j = 0; j < ntoh(grp->nprunes); j++, addr++)
 			_do_encoded_address(os, "Prune", *addr);
 
 		os.dec_level();
@@ -448,14 +421,13 @@ void _debug_pim_dump(base_stream &os, const pim_joinprune_message &msg) {
 void _debug_pim_dump(base_stream &os, const pim_assert_message &msg) {
 	os.xprintf("PIM Assert for (%{addr}, %{addr})%s Pref %u Metric %u\n",
 		   msg.saddr.addr, msg.gaddr.addr,
-		   _TEST(ntohl(msg.metric_pref), 31) ? " RPT" : "",
-		   (uint32_t)ntohl(msg.metric_pref) & ~_BIT(31),
-		   (uint32_t)ntohl(msg.metric));
+		   msg.rpt() ? " RPT" : "", msg.metric_pref(),
+		   ntoh(msg.metric));
 }
 
 void _debug_pim_dump(base_stream &os, const pim_bootstrap_message &msg, int len) {
 	os.xprintf("PIM Bootstrap from BSR %{addr}, frag %u, masklen %u, prio %u\n",
-		   msg.bsr_address.addr, (uint32_t)ntohs(msg.fragment),
+		   msg.bsr_address.addr, (uint32_t)ntoh(msg.fragment),
 		   (uint32_t)msg.hash_masklen, (uint32_t)msg.bsr_priority);
 
 	pim_bootstrap_group_def *grp = msg.grps();
@@ -491,7 +463,7 @@ void _debug_pim_dump(base_stream &os, const pim_bootstrap_message &msg, int len)
 		for (int j = 0; j < grp->fragrp; j++) {
 			os.xprintf("%{addr}, prio = %i, holdtime = %u\n",
 				   rp->addr.addr, (int)rp->priority,
-				   (uint32_t)ntohs(rp->holdtime));
+				   (uint32_t)ntoh(rp->holdtime));
 			rp++;
 		}
 

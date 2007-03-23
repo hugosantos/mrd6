@@ -27,8 +27,8 @@
 
 #include <mrd/address.h>
 #include <mrd/address_set.h>
+#include <mrd/support/uint_n.h>
 
-#include <netinet/in.h>
 #include <netinet/ip6.h>
 
 class base_stream;
@@ -73,8 +73,8 @@ struct pim_hello_option {
 		cisco_old_addrlist = 65001,
 	};
 
-	uint16_t type;
-	uint16_t length;
+	uint16n_t type;
+	uint16n_t length;
 
 	void construct(uint16_t type, uint16_t length);
 
@@ -82,8 +82,11 @@ struct pim_hello_option {
 	void add_uint16pair(uint16_t type, uint16_t v1, uint16_t v2);
 	void add_uint32(uint16_t type, uint32_t value);
 
-	pim_hello_option *next() const;
 	void *data();
+	uint16n_t *data16() { return (uint16n_t *)data(); }
+	uint32n_t *data32() { return (uint32n_t *)data(); }
+
+	pim_hello_option *next() const;
 } __attribute__ ((packed));
 
 /*!
@@ -99,7 +102,7 @@ struct pim_hello_message : pim_message {
  * \brief PIM Register message.
  */
 struct pim_register_message : pim_message {
-	uint32_t nb;
+	uint32n_t nb;
 
 	void construct(bool border, bool null);
 
@@ -178,8 +181,8 @@ struct pim_register_stop_message : pim_message {
 
 struct pim_joinprune_group {
 	pim_encoded_group_address maddr;
-	uint16_t njoins;
-	uint16_t nprunes;
+	uint16n_t njoins;
+	uint16n_t nprunes;
 
 	void construct(const inet6_addr &addr, uint16_t js, uint16_t ps);
 
@@ -202,17 +205,19 @@ struct pim_joinprune_message : pim_message {
 	pim_encoded_unicast_address upstream_neigh;
 	uint8_t resv1;
 	uint8_t ngroups;
-	uint16_t holdtime;
+	uint16n_t ht;
 
 	void construct(const inet6_addr &, uint8_t groups, uint16_t holdtime);
 
+	/* holdtime in miliseconds */
+	uint32_t holdtime() const;
 	uint16_t length() const;
 	pim_joinprune_group *groups() const;
 } __attribute__ ((packed));
 
 struct pim_bootstrap_rp_record {
 	pim_encoded_unicast_address addr;
-	uint16_t holdtime;
+	uint16n_t holdtime;
 	uint8_t priority;
 	uint8_t resv;
 } __attribute__ ((packed));
@@ -232,7 +237,7 @@ struct pim_bootstrap_group_def {
  * \brief PIM Bootstrap message.
  */
 struct pim_bootstrap_message : pim_message {
-	uint16_t fragment;
+	uint16n_t fragment;
 	uint8_t hash_masklen, bsr_priority;
 	pim_encoded_unicast_address bsr_address;
 
@@ -246,7 +251,7 @@ struct pim_bootstrap_message : pim_message {
 struct pim_candidate_rp_adv_message : pim_message {
 	uint8_t prefixcount;
 	uint8_t priority;
-	uint16_t holdtime;
+	uint16n_t holdtime;
 	pim_encoded_unicast_address rp_addr;
 
 	void construct(uint8_t, uint8_t, uint16_t, const in6_addr &);
@@ -262,13 +267,14 @@ struct pim_candidate_rp_adv_message : pim_message {
 struct pim_assert_message : pim_message {
 	pim_encoded_group_address gaddr;
 	pim_encoded_unicast_address saddr;
-	uint32_t metric_pref;
-	uint32_t metric;
+	uint32n_t metpref;
+	uint32n_t metric;
 
 	void construct(const inet6_addr &, const in6_addr &, bool,
 		       uint32_t, uint32_t);
 
 	bool rpt() const;
+	uint32_t metric_pref() const;
 } __attribute__ ((packed));
 
 void _debug_pim_dump(base_stream &, const pim_joinprune_message &);

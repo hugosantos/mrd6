@@ -304,11 +304,11 @@ void pim_bsr::handle_candidate_rp_adv(pim_interface *intf, const sockaddr_in6 *f
 	std::list<inet6_addr> grps;
 
 	pim_encoded_group_address *grp = msg->grps();
-	for (uint8_t i = 0; i < msg->prefixcount; i++, grp++) {
+	for (uint8_t i = 0; i < msg->prefixcount; i++, grp++)
 		grps.push_back(inet6_addr(grp->addr, grp->masklen));
-	}
 
-	m_rp_set.update_entries(msg->rp_addr.addr, msg->priority, ntohs(msg->holdtime), grps);
+	m_rp_set.update_entries(msg->rp_addr.addr, msg->priority,
+				ntoh(msg->holdtime), grps);
 }
 
 void pim_bsr::broadcast_rp_set_changed(pim_rp_set *) const {
@@ -818,7 +818,7 @@ void pim_rp_set::store_from_message(const in6_addr &from, pim_bootstrap_message 
 
 		pim_bootstrap_rp_record *rp = grp->rps();
 		for (uint8_t j = 0; j < grp->fragrp; j++, rp++) {
-			uint16_t holdtime = ntohs(rp->holdtime);
+			uint16_t holdtime = ntoh(rp->holdtime);
 
 			if (holdtime == 0) {
 				if (g) {
@@ -903,7 +903,7 @@ void pim_rp_set::build_message(pim_bootstrap_message *msg, uint16_t &len) const 
 		for (std::list<entry *>::const_iterator j = i->entries.begin();
 						j != i->entries.end(); ++j) {
 			rp->addr.construct((*j)->rpaddr);
-			rp->holdtime = htons((*j)->holdtime);
+			rp->holdtime = hton((*j)->holdtime);
 			rp->priority = (*j)->prio;
 			rp->resv = 0;
 			rp++;
