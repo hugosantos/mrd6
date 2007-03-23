@@ -186,8 +186,8 @@ struct pim_joinprune_group {
 
 	void construct(const inet6_addr &addr, uint16_t js, uint16_t ps);
 
-	uint16_t join_count() const;
-	uint16_t prune_count() const;
+	uint16_t join_count() const { return ntoh(njoins); }
+	uint16_t prune_count() const { return ntoh(nprunes); }
 
 	pim_encoded_source_address *addrs() const;
 	uint16_t length() const;

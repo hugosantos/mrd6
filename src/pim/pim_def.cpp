@@ -233,14 +233,6 @@ void pim_joinprune_group::construct(const inet6_addr &addr, uint16_t js, uint16_
 	nprunes = hton(ps);
 }
 
-uint16_t pim_joinprune_group::join_count() const {
-	return ntoh(njoins);
-}
-
-uint16_t pim_joinprune_group::prune_count() const {
-	return ntoh(nprunes);
-}
-
 pim_encoded_source_address *pim_joinprune_group::addrs() const {
 	return (pim_encoded_source_address *)(((uint8_t *)this) + sizeof(*this));
 }

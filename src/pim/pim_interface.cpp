@@ -556,7 +556,7 @@ void pim_interface::handle_joinprune(const sockaddr_in6 *_from, pim_joinprune_me
 		return;
 	}
 
-	uint16_t j, njs, nps;
+	uint16_t j;
 	pim_group_node *node;
 	pim_source_state_base *state;
 	pim_encoded_source_address *addr;
@@ -569,12 +569,9 @@ void pim_interface::handle_joinprune(const sockaddr_in6 *_from, pim_joinprune_me
 		groupconf *entry = g_mrd->match_group_configuration(groupaddr);
 		pim_groupconf_node *info = entry ? (pim_groupconf_node *)entry->get_child("pim") : 0;
 
-		njs = grp->join_count();
-		nps = grp->prune_count();
-
 		addr = grp->addrs();
 
-		for (j = 0; j < njs; j++, addr = addr->next()) {
+		for (j = 0; j < grp->join_count(); j++, addr = addr->next()) {
 			inet6_addr srcaddr(addr->addr, addr->masklen);
 
 			if (addr->wc() && addr->rpt()) {
@@ -604,7 +601,7 @@ void pim_interface::handle_joinprune(const sockaddr_in6 *_from, pim_joinprune_me
 			}
 		}
 
-		for (j = 0; j < nps; j++, addr = addr->next()) {
+		for (j = 0; j < grp->prune_count(); j++, addr = addr->next()) {
 			node = pim->get_group(groupaddr);
 			if (node) {
 				inet6_addr srcaddr(addr->addr, addr->masklen);
