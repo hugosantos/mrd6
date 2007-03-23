@@ -135,6 +135,8 @@ struct pim_encoded_group_address {
 	void construct(const inet6_addr &, bool z, bool b);
 	void construct(const inet6_addr &);
 
+	inet6_addr address() const { return inet6_addr(addr, masklen); }
+
 	bool bidir() const;
 	bool zoned() const;
 } __attribute__ ((packed));
@@ -160,6 +162,8 @@ struct pim_encoded_source_address {
 
 	void construct(const inet6_addr &, bool wc, bool rpt);
 
+	inet6_addr address() const { return inet6_addr(addr, masklen); }
+
 	bool sparse() const;
 	bool wc() const ;
 	bool rpt() const;
@@ -179,6 +183,35 @@ struct pim_register_stop_message : pim_message {
 	void construct(const inet6_addr &, const inet6_addr &);
 } __attribute__ ((packed));
 
+struct pim_jp_g_iterator {
+	typedef std::forward_iterator_tag iterator_category;
+	typedef pim_encoded_source_address value_type;
+	typedef ptrdiff_t difference_type;
+	typedef pim_encoded_source_address *pointer;
+	typedef pim_encoded_source_address &reference;
+
+	pim_jp_g_iterator(pointer src) : current(src) {}
+
+	reference operator *() const { return *current; }
+	pointer operator->() const { return current; }
+
+	pim_jp_g_iterator &operator++() { current++; return *this; }
+	pim_jp_g_iterator operator+(int) { return ++pim_jp_g_iterator(*this); }
+
+	friend bool operator == (const pim_jp_g_iterator &a,
+				 const pim_jp_g_iterator &b) {
+		return a.current == b.current;
+	}
+
+	friend bool operator != (const pim_jp_g_iterator &a,
+				 const pim_jp_g_iterator &b) {
+		return a.current != b.current;
+	}
+
+private:
+	pointer current;
+};
+
 struct pim_joinprune_group {
 	pim_encoded_group_address maddr;
 	uint16n_t njoins;
@@ -186,16 +219,33 @@ struct pim_joinprune_group {
 
 	void construct(const inet6_addr &addr, uint16_t js, uint16_t ps);
 
-	uint16_t join_count() const { return ntoh(njoins); }
-	uint16_t prune_count() const { return ntoh(nprunes); }
-
-	pim_encoded_source_address *addrs() const;
 	uint16_t length() const;
+
+	pim_jp_g_iterator join_begin() const {
+		return pim_jp_g_iterator(addrs());
+	}
+	pim_jp_g_iterator join_end() const {
+		return pim_jp_g_iterator(addrs() + join_count());
+	}
+	pim_jp_g_iterator prune_begin() const {
+		return pim_jp_g_iterator(addrs() + join_count());
+	}
+	pim_jp_g_iterator prune_end() const {
+		return pim_jp_g_iterator(addrs() + join_count() + prune_count());
+	}
 
 	address_set &pruned_addrs(address_set &) const;
 	bool has_prune_addr(const inet6_addr &) const;
 
 	pim_joinprune_group *next() const;
+
+	pim_encoded_source_address *addrs() const {
+		return (pim_encoded_source_address *)(((uint8_t *)this) + sizeof(*this));
+	}
+
+private:
+	uint16_t join_count() const { return ntoh(njoins); }
+	uint16_t prune_count() const { return ntoh(nprunes); }
 } __attribute__ ((packed));
 
 /*!

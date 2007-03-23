@@ -556,10 +556,7 @@ void pim_interface::handle_joinprune(const sockaddr_in6 *_from, pim_joinprune_me
 		return;
 	}
 
-	uint16_t j;
 	pim_group_node *node;
-	pim_source_state_base *state;
-	pim_encoded_source_address *addr;
 
 	pim_joinprune_group *grp = msg->groups();
 
@@ -569,55 +566,55 @@ void pim_interface::handle_joinprune(const sockaddr_in6 *_from, pim_joinprune_me
 		groupconf *entry = g_mrd->match_group_configuration(groupaddr);
 		pim_groupconf_node *info = entry ? (pim_groupconf_node *)entry->get_child("pim") : 0;
 
-		addr = grp->addrs();
-
-		for (j = 0; j < grp->join_count(); j++, addr = addr->next()) {
-			inet6_addr srcaddr(addr->addr, addr->masklen);
-
-			if (addr->wc() && addr->rpt()) {
+		for (pim_jp_g_iterator i = grp->join_begin();
+					i != grp->join_end(); ++i) {
+			if (i->wc() && i->rpt()) {
 				bool accept_rp = true;
 
 				if (info)
 					accept_rp = info->get_property_address
-							("accept_rp").matches(srcaddr);
+							("accept_rp").matches(i->address());
 
 				if (accept_rp) {
 					address_set prunes;
-
 					grp->pruned_addrs(prunes);
 
-					handle_join_wc_rpt(groupaddr, srcaddr,
+					handle_join_wc_rpt(groupaddr, i->address(),
 							   prunes, msg->holdtime(),
-							   addr->rpt());
+							   i->rpt());
 				} else {
 					/// 3.2.2.1.1
 				}
-			} else if (!addr->wc() && !addr->rpt()) {
-				handle_join_source(groupaddr, srcaddr,
-						   msg->holdtime(), addr->rpt());
+			} else if (!i->wc() && !i->rpt()) {
+				handle_join_source(groupaddr, i->address(),
+						   msg->holdtime(), i->rpt());
 			} else {
-				handle_join(groupaddr, srcaddr,
-					    msg->holdtime(), addr->rpt());
+				handle_join(groupaddr, i->address(),
+					    msg->holdtime(), i->rpt());
 			}
 		}
 
-		for (j = 0; j < grp->prune_count(); j++, addr = addr->next()) {
+		for (pim_jp_g_iterator i = grp->prune_begin();
+					i != grp->prune_end(); ++i) {
+			/* we update the node reference on each cycle as
+			 * it may have been deleted due to a prune */
 			node = pim->get_group(groupaddr);
-			if (node) {
-				inet6_addr srcaddr(addr->addr, addr->masklen);
+			if (node == NULL)
+				continue;
 
-				if (!addr->wc()) {
-					state = node->get_state(srcaddr, addr->rpt());
+			pim_source_state_base *target = NULL;
+			uint32_t holdtime = 0;
 
-					if (state) {
-						state->set_oif(owner(), msg->holdtime(), false);
-					}
-				} else if (addr->wc() && addr->rpt()) {
-					if (node->has_wildcard() && node->rpaddr() == srcaddr) {
-						node->wildcard()->set_oif(owner(), 0, false);
-					}
-				}
+			if (!i->wc()) {
+				target = node->get_state(i->address(), i->rpt());
+				holdtime = msg->holdtime();
+			} else if (i->wc() && i->rpt()) {
+				if (node->rpaddr() == i->address())
+					target = node->wildcard();
 			}
+
+			if (target)
+				target->set_oif(owner(), holdtime, false);
 		}
 	}
 }
@@ -625,15 +622,11 @@ void pim_interface::handle_joinprune(const sockaddr_in6 *_from, pim_joinprune_me
 void pim_interface::handle_external_joinprune(const sockaddr_in6 *_from,
 					      pim_joinprune_message *msg,
 					      uint16_t len) {
-	uint16_t j, njs, nps;
 	pim_group_node *node;
-	pim_encoded_source_address *addr;
 
 	pim_neighbour *upneigh = pim->get_neighbour(msg->upstream_neigh.addr);
 	if (!upneigh)
 		return;
-
-	uint32_t holdtime = msg->holdtime();
 
 	pim_joinprune_group *grp = msg->groups();
 
@@ -644,43 +637,47 @@ void pim_interface::handle_external_joinprune(const sockaddr_in6 *_from,
 		if (!node)
 			continue;
 
-		njs = grp->join_count();
-		nps = grp->prune_count();
+		for (pim_jp_g_iterator i = grp->join_begin();
+					i != grp->join_end(); ++i) {
+			if (i->wc() || i->rpt())
+				continue;
 
-		addr = grp->addrs();
+			pim_group_source_state *state = node->get_state(i->address());
+			if (state == NULL)
+				continue;
 
-		for (j = 0; j < njs; j++, addr = addr->next()) {
-			inet6_addr srcaddr(addr->addr, addr->masklen);
+			if (state->upstream_neighbour() != upneigh)
+				continue;
 
-			if (!addr->wc() && !addr->rpt()) {
-				pim_group_source_state *state = node->get_state(srcaddr);
-				if (state && state->upstream_neighbour() == upneigh
-						&& state->upstream_path()) {
-					/* A (S,G) that is being currenty joined */
+			pim_neighbour::upstream_path *path = state->upstream_path();
+			if (path == NULL)
+				continue;
 
-					/* If (S,G) is joined and we see a Join,
-					 * supress our next one, if sent in the following
-					 * `override` milisecs */
-					if (state->upstream_path()->is_joined())
-						state->upstream_path()->update_last_seen(holdtime);
-				}
-			}
+			/* A (S,G) that is being currenty joined */
+
+			/* If (S,G) is joined and we see a Join, supress our
+			 * next one, if sent in the following `override` milisecs */
+			if (path->is_joined())
+				path->update_last_seen(msg->holdtime());
 		}
 
-		for (j = 0; j < nps; j++, addr = addr->next()) {
-			inet6_addr srcaddr(addr->addr, addr->masklen);
+		for (pim_jp_g_iterator i = grp->prune_begin();
+					i != grp->prune_end(); ++i) {
+			if (i->wc() || i->rpt())
+				continue;
 
-			if (!addr->wc() && !addr->rpt()) {
-				pim_group_source_state *state = node->get_state(srcaddr);
-				if (state && state->upstream_neighbour() == upneigh
-						&& state->upstream_path()) {
-					/* A (S,G) that is being currenty pruned */
+			pim_group_source_state *state = node->get_state(i->address());
+			if (state == NULL)
+				continue;
 
-					/* If (S,G) is joined and we see a Prune,
-					 * trigger a Join message upstream */
-					if (state->upstream_path()->is_joined())
-						state->upstream_path()->refresh_now();
-				}
+			if (state->upstream_neighbour() == upneigh &&
+			    state->upstream_path()) {
+				/* A (S,G) that is being currenty pruned */
+
+				/* If (S,G) is joined and we see a Prune,
+				 * trigger a Join message upstream */
+				if (state->upstream_path()->is_joined())
+					state->upstream_path()->refresh_now();
 			}
 		}
 	}

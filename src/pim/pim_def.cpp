@@ -233,10 +233,6 @@ void pim_joinprune_group::construct(const inet6_addr &addr, uint16_t js, uint16_
 	nprunes = hton(ps);
 }
 
-pim_encoded_source_address *pim_joinprune_group::addrs() const {
-	return (pim_encoded_source_address *)(((uint8_t *)this) + sizeof(*this));
-}
-
 uint16_t pim_joinprune_group::length() const {
 	int total = sizeof(*this);
 	int count = join_count() + prune_count();
@@ -386,7 +382,7 @@ void _debug_pim_dump(base_stream &os, const pim_joinprune_message &msg) {
 	os.xprintf("PIM J/P for %{addr} with holdtime %u\n",
 		   msg.upstream_neigh.addr, msg.holdtime());
 
-	int i, j;
+	int i;
 	pim_joinprune_group *grp = msg.groups();
 
 	os.inc_level();
@@ -396,13 +392,13 @@ void _debug_pim_dump(base_stream &os, const pim_joinprune_message &msg) {
 
 		os.inc_level();
 
-		pim_encoded_source_address *addr = grp->addrs();
+		for (pim_jp_g_iterator i = grp->join_begin();
+					i != grp->join_end(); ++i)
+			_do_encoded_address(os, "Join", *i);
 
-		for (j = 0; j < ntoh(grp->njoins); j++, addr++)
-			_do_encoded_address(os, "Join", *addr);
-
-		for (j = 0; j < ntoh(grp->nprunes); j++, addr++)
-			_do_encoded_address(os, "Prune", *addr);
+		for (pim_jp_g_iterator i = grp->prune_begin();
+					i != grp->prune_end(); ++i)
+			_do_encoded_address(os, "Prune", *i);
 
 		os.dec_level();
 	}
