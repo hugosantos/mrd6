@@ -29,6 +29,7 @@
 #include <arpa/inet.h>
 
 #include <cstdio>
+#include <cstdlib>
 
 base_stream &operator << (base_stream &os, const inet6_addr &addr) {
 	return os.xprintf("%{Addr}", addr);
