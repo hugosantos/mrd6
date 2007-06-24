@@ -36,7 +36,20 @@
 #define ARPHRD_NONE 0xfffe
 #endif
 
-static const char *accept_kernel_routes = "kernel-or-boot-routes";
+#define RT_PROTOS_PATH	"/etc/iproute2/rt_protos"
+
+enum linux_method_name {
+	method_filter_routes = 8000,
+	method_show_filtered_routes,
+};
+
+static const method_info linux_methods[] = {
+	{ "filter-routes", "Filter routes imported from Linux\'s RIB.",
+		method_filter_routes, false, 0 },
+	{ "filtered-routes", "Display which protocols are being blocked from being imported from Linux\'s RIB.",
+		method_show_filtered_routes, true, 0 },
+	{ NULL }
+};
 
 struct netlink_msg {
 	nlmsghdr n;
@@ -83,7 +96,9 @@ linux_unicast_router::linux_unicast_router()
 	bufferlen = instantiate_property_u("netlink-buffer", 0xffff);
 	buffer = 0;
 
-	instantiate_property_b(accept_kernel_routes, false);
+	import_methods(linux_methods);
+
+	filter_protos.insert(RTPROT_KERNEL);
 
 	rt_dumping = false;
 }
@@ -336,9 +351,12 @@ void linux_unicast_router::handle_route_event(bool isnew, nlmsghdr *hdr) {
 		if (res.protocol == RTPROT_UNSPEC || res.protocol == RTPROT_REDIRECT)
 			return;
 
-		if (res.protocol == RTPROT_BOOT || res.protocol == RTPROT_KERNEL) {
-			if (!get_property_bool(accept_kernel_routes))
-				return;
+		if (filter_protos.find(res.protocol) != filter_protos.end()) {
+			if (g_mrd->should_log(INTERNAL_FLOW))
+				g_mrd->log().xprintf("(LINUX) Filtered %s route for "
+					 "%{Addr} with dev %i gw %{addr} prefsrc "
+					 "%{addr} by policy.\n", isnew ? "new" : "lost",
+					 res.dst, res.dev, res.nexthop, res.source);
 		}
 
 		prefix_changed(isnew, res);
@@ -479,3 +497,123 @@ void linux_unicast_router::parse_prefix_rec(rtattr *tb[], int plen, int protocol
 		reply.metric = *(uint32_t *)RTA_DATA(tb[RTA_PRIORITY]);
 }
 
+bool linux_unicast_router::call_method(int id, base_stream &out,
+		const std::vector<std::string> &args) {
+	switch (id) {
+	case method_filter_routes:
+		return filter_routes(out, args);
+	case method_show_filtered_routes:
+		return show_filter_routes(out, args);
+	}
+
+	return rib_def::call_method(id, out, args);
+}
+
+bool linux_unicast_router::filter_routes(base_stream &out,
+		const std::vector<std::string> &args) {
+	std::map<int, std::string> pmap = parse_rt_protos();
+	std::map<std::string, int> proto_map;
+
+	for (std::map<int, std::string>::const_iterator i = pmap.begin();
+			i != pmap.end(); ++i)
+		proto_map[i->second] = i->first;
+
+	std::set<int> new_filter;
+
+	for (std::vector<std::string>::const_iterator i = args.begin();
+			i != args.end(); ++i) {
+		int value = -1;
+
+		if (isdigit(*i->c_str())) {
+			char *endp;
+			value = strtol(i->c_str(), &endp, 10);
+			if (*endp)
+				value = -1;
+		} else {
+			std::map<std::string, int>::const_iterator j = proto_map.find(*i);
+			if (j != proto_map.end())
+				value = j->second;
+		}
+
+		if (value < 0) {
+			out.xprintf("Invalid argument `%s`.\n", i->c_str());
+			return true;
+		}
+
+		new_filter.insert(value);
+	}
+
+	filter_protos = new_filter;
+
+	return true;
+}
+
+bool linux_unicast_router::show_filter_routes(base_stream &out,
+		const std::vector<std::string> &args) {
+	if (!args.empty()) {
+		out.writeline("This method accepts no arguments.");
+		return true;
+	}
+
+	const std::map<int, std::string> pmap = parse_rt_protos();
+
+	for (std::set<int>::const_iterator i = filter_protos.begin();
+			i != filter_protos.end(); ++i) {
+		std::map<int, std::string>::const_iterator j = pmap.find(*i);
+
+		if (j == pmap.end())
+			out.xprintf("? (%i)\n", *i);
+		else
+			out.xprintf("%s (%i)\n", j->second.c_str(), *i);
+	}
+
+	return true;
+}
+
+std::map<int, std::string> linux_unicast_router::parse_rt_protos() const {
+	FILE *rt_p = fopen(RT_PROTOS_PATH, "r");
+	if (rt_p == NULL)
+		return std::map<int, std::string>();
+
+	std::map<int, std::string> proto_map;
+
+	char line_b[256];
+
+	while (fgets(line_b, sizeof(line_b), rt_p)) {
+		char *linep = line_b;
+		line_b[strlen(line_b)-1] = 0;
+
+		while (isspace(*linep))
+			linep++;
+
+		if (*linep == '#')
+			continue;
+
+		if (!isdigit(*linep))
+			continue;
+
+		char *next = linep;
+		while (isdigit(*next))
+			next++;
+
+		if (!isspace(*next))
+			continue;
+
+		while (isspace(*next))
+			next++;
+
+		if (!isalpha(*next))
+			continue;
+
+		char *end_next = next;
+		while (*end_next && !isspace(*end_next) && *end_next != '#')
+			end_next++;
+		*end_next = 0;
+
+		proto_map[strtol(linep, NULL, 10)] = next;
+	}
+
+	fclose(rt_p);
+
+	return proto_map;
+}

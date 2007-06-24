@@ -41,6 +41,7 @@
 #include <linux/rtnetlink.h>
 #endif
 
+#include <set>
 #include <map>
 #include <list>
 
@@ -79,6 +80,12 @@ private:
 
 	void parse_prefix_rec(rtattr *tb[], int, int, lookup_result &) const;
 
+	bool call_method(int, base_stream &, const std::vector<std::string> &);
+	bool filter_routes(base_stream &, const std::vector<std::string> &);
+	bool show_filter_routes(base_stream &, const std::vector<std::string> &);
+
+	std::map<int, std::string> parse_rt_protos() const;
+
 	uint8_t *buffer;
 	property_def *bufferlen;
 
@@ -87,6 +94,8 @@ private:
 	bool rt_dumping;
 
 	uint32_t rt_nlseq;
+
+	std::set<int> filter_protos;
 };
 
 #endif

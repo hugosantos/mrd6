@@ -1,6 +1,5 @@
 -include Makefile.options
 
-CC ?= gcc
 CXX ?= g++
 
 PLATFORM ?= OS_LINUX
