@@ -760,14 +760,32 @@ void pim_rp_set::update_entries(const inet6_addr &rpaddr, uint8_t prio,
 	}
 }
 
-void pim_rp_set::store_from_message(const in6_addr &from, pim_bootstrap_message *msg, uint16_t len) {
-	m_hashmask = msg->hash_masklen;
-
+static inline bool
+bsm_is_valid_and_has_groups(const in6_addr &from,
+	const pim_bootstrap_message *msg, uint16_t len)
+{
 	pim_bootstrap_group_def *grp = msg->grps();
-	uint16_t i = sizeof(pim_bootstrap_message);
+	bool has_groups = false;
 
-	bool changed = false;
+	for (uint32_t i = sizeof(pim_bootstrap_message);
+			i < len; i += grp->length(), grp = grp->next()) {
+		if ((i + grp->length()) > len) {
+			/* badly formed packet */
+			if (pim->should_log(MESSAGE_ERR))
+				pim->bsr().log().xprintf("Received badly formed BSR message "
+							 "from %{addr}, dropping.\n", from);
 
+			return false;
+		}
+
+		if (grp->fragrp > 0)
+			has_groups = true;
+	}
+
+	return has_groups;
+}
+
+void pim_rp_set::store_from_message(const in6_addr &from, pim_bootstrap_message *msg, uint16_t len) {
 	/*
 	 * ``The router uses the group-to-RP mappings contained in a BSM to
 	 *   update its local RP-Set.
@@ -779,45 +797,21 @@ void pim_rp_set::store_from_message(const in6_addr &from, pim_bootstrap_message 
 	 */
 
 	/* check if message is empty, and if lengths are OK */
-
-	int groupcount = 0;
-
-	while (1) {
-		i += grp->length();
-
-		if (i == len)
-			break;
-		else if (i > len) {
-			/* badly formed packet */
-			if (pim->should_log(MESSAGE_ERR))
-				pim->bsr().log().xprintf("Received badly formed BSR message "
-							 "from %{addr}, dropping.\n", from);
-
-			return;
-		}
-
-		if (grp->fragrp > 0) {
-			groupcount ++;
-		}
-
-		grp = grp->next();
-	}
-
-	if (groupcount == 0)
+	if (!bsm_is_valid_and_has_groups(from, msg, len))
 		return;
 
-	grp = msg->grps();
-	i = sizeof(pim_bootstrap_message);
+	pim_bootstrap_group_def *grp = msg->grps();
+	m_hashmask = msg->hash_masklen;
+	bool changed = false;
 
-	while (1) {
-		i += grp->length();
-
+	for (uint32_t i = sizeof(pim_bootstrap_message);
+			i < len; i += grp->length(), grp = grp->next()) {
 		inet6_addr grpaddr(grp->grpaddr.addr, grp->grpaddr.masklen);
 
 		group_set *g = m_db.search(grpaddr);
 
 		pim_bootstrap_rp_record *rp = grp->rps();
-		for (uint8_t j = 0; j < grp->fragrp; j++, rp++) {
+		for (int j = 0; j < grp->fragrp; j++, rp++) {
 			uint16_t holdtime = ntoh(rp->holdtime);
 
 			if (holdtime == 0) {
@@ -881,11 +875,6 @@ void pim_rp_set::store_from_message(const in6_addr &from, pim_bootstrap_message 
 				delete g;
 			}
 		}
-
-		if (i == len)
-			break;
-
-		grp = grp->next();
 	}
 
 	if (changed)
