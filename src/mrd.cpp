@@ -948,7 +948,6 @@ bool mrd::check_startup(const char *conffile, bool autoload) {
 	if (!register_source_discovery("static", &m_static_source_disc))
 		return false;
 
-	g_rlog.attach_node(new syslog_log_node(&g_rlog, "syslog", 5));
 	g_rlog.attach_node(new file_log_node(&g_rlog, "stderr", 5, stderr));
 
 	intfconf *all = new intfconf("all");
