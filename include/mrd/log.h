@@ -279,10 +279,8 @@ class tb_log_node : public log_node {
 public:
 	tb_log_node(log_base *, const char *name, int infolevel);
 
-	bool now_s();
-
-	char _fbuf[64];
-	time_t _lnow;
+protected:
+	const char *timestamp(char *buffer, size_t length) const;
 };
 
 /*! file based log_node (also supports stderr) */
@@ -299,7 +297,7 @@ public:
 
 	FILE *_fp;
 	std::string _base_filename;
-	property_def *_flush, *_date_usage;
+	property_def *_flush;
 };
 
 enum {

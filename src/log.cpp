@@ -325,20 +325,23 @@ void syslog_log_node::log(int type, int level, const char *msg, bool) {
 }
 
 tb_log_node::tb_log_node(log_base *parent, const char *name, int level)
-	: log_node(parent, name, level), _lnow(0) {}
+	: log_node(parent, name, level) {}
 
-bool tb_log_node::now_s() {
-	time_t nowt = time(NULL);
+const char *
+tb_log_node::timestamp(char *buffer, size_t length) const
+{
+	timeval tv;
+	gettimeofday(&tv, NULL);
+	time_t nowt = tv.tv_sec;
 
-	if (nowt > _lnow) {
-		struct tm tmp;
-		strftime(_fbuf, sizeof(_fbuf), "%b %d %H:%M:%S ", localtime_r(&nowt, &tmp));
-		_lnow = nowt;
+	assert(length >= 1);
 
-		return true;
-	}
+	buffer[0] = '[';
+	size_t l = strftime(buffer + 1, length - 1, "%b %d %T", localtime(&nowt));
+	assert((l + 1) <= length);
+	snprintf(buffer + 1 + l, length - l - 1, ":%06u]", (uint32_t)tv.tv_usec);
 
-	return false;
+	return buffer;
 }
 
 file_log_node::file_log_node(log_base *parent, const char *name, int level,
@@ -350,7 +353,6 @@ file_log_node::file_log_node(log_base *parent, const char *name, int level,
 	_fp = fopen(filename, "a");
 
 	_flush = instantiate_property_b("flush", flush);
-	_date_usage = instantiate_property_u("date-usage", 0);
 }
 
 file_log_node::file_log_node(log_base *parent, const char *name, int level,
@@ -358,7 +360,6 @@ file_log_node::file_log_node(log_base *parent, const char *name, int level,
 	: tb_log_node(parent, name, level), _fp(param) {
 
 	_flush = instantiate_property_b("flush", false);
-	_date_usage = instantiate_property_u("date-usage", 0);
 }
 
 file_log_node::~file_log_node() {
@@ -371,26 +372,16 @@ file_log_node::~file_log_node() {
 bool file_log_node::check_startup() {
 	if (!log_node::check_startup())
 		return false;
-	return _flush != 0 && _date_usage != 0 && _fp != 0;
+	return _flush != 0 && _fp != 0;
 }
 
 void file_log_node::log(int type, int level, const char *msg, bool newline) {
 	if (!_fp)
 		return;
 
-	if (_date_usage->get_unsigned() == 0) {
-		now_s();
-		fputs(_fbuf, _fp);
-	} else {
-		if (now_s()) {
-			fputs(_fbuf, _fp);
-		} else {
-			int k = strlen(_fbuf);
-			for (int i = 0; i < k; i++)
-				fputc(' ', _fp);
-		}
-	}
-
+	char tmp[64];
+	fputs(timestamp(tmp, sizeof(tmp)), _fp);
+	fputc(' ', _fp);
 	fputs(msg, _fp);
 
 	if (newline)

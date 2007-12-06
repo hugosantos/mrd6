@@ -518,8 +518,8 @@ void console_log_node::rename(const char *n) {
 void console_log_node::log(int, int, const char *buf, bool newline) {
 	if (newline) {
 		_conn->log(false);
-		now_s();
-		_conn->_output.printf("- LOG %s- ", _fbuf);
+		char buf[64];
+		_conn->_output.printf("- LOG %s- ", timestamp(buf, sizeof(buf)));
 		if (!_buf.empty())
 			_conn->_output.append_chunk(_buf.c_str(), _buf.size());
 		_conn->_output.write(buf);
