@@ -183,7 +183,9 @@ void pim_bsr::output_info(base_stream &ctx) const {
 	if (m_p_bsr_candidate->get_bool()) {
 		ctx.xprintf("BSR State: %s", _bsr_state_name(m_bsr_state));
 
-		if (m_bsr_timer.is_running())
+		if (!m_bsr_timer.is_running())
+			ctx.write(" (Not running)");
+		else if (m_bsr_state != BSRElected)
 			ctx.xprintf(" (for %{duration})", m_bsr_timer.time_left_d());
 
 		ctx.newl();
