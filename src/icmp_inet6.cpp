@@ -41,6 +41,11 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 
+/* this should be in <netinet/ip6.h> */
+#ifndef IP6OPT_ROUTER_ALERT
+#define IP6OPT_ROUTER_ALERT 5
+#endif
+
 icmp_inet6::icmp_inet6()
 	: m_icmpsock("icmpv6", this, std::mem_fun(&icmp_inet6::data_available)) {
 }
