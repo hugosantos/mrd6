@@ -266,6 +266,8 @@ struct pim_bootstrap_message : pim_message {
 
 	void construct(uint16_t, uint8_t, uint8_t, const in6_addr &);
 	pim_bootstrap_group_def *grps() const;
+
+	bool no_forward() const;
 } __attribute__ ((packed));
 
 /*!

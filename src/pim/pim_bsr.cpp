@@ -228,15 +228,24 @@ void pim_bsr::handle_bootstrap_message(pim_interface *pif, const sockaddr_in6 *f
 	}
 
 	if (dst->sin6_addr == pim_all_routers) {
-		/*
-		 * if (BSM.src_ip_address != RPF_neighbor(BSM.BSR_ip_address))
-		 *	silent drop
-		 */
+		if (!msg->no_forward()) {
+			/*
+			 * if (BSM.src_ip_address != RPF_neighbor(BSM.BSR_ip_address))
+			 *	silent drop
+			 */
 
-		pim_neighbour *neigh = pim->get_rpf_neighbour(msg->bsr_address.addr);
-		if (!neigh || !neigh->has_address(from->sin6_addr)) {
-			/* Silent drop */
-			return;
+			pim_neighbour *neigh = pim->get_rpf_neighbour(msg->bsr_address.addr);
+			if (!neigh || !neigh->has_address(from->sin6_addr)) {
+				/* Silent drop */
+				return;
+			}
+		} else {
+			/* XXX unimplemented */
+			/*  } else if ((any previous BSM for this scope has been accepted) OR
+             		(more than BS_Period has elapsed since startup)) {
+				    #only accept no-forward BSM if quick refresh on startup
+				    drop the Bootstrap message silently
+				} */
 		}
 	} else if (g_mrd->has_address(dst->sin6_addr)) {
 		/* XXX check for last reception, to see if
@@ -246,8 +255,10 @@ void pim_bsr::handle_bootstrap_message(pim_interface *pif, const sockaddr_in6 *f
 		return;
 	}
 
+	bool ispref = is_bsr_preferred(msg);
+
 	if (m_p_bsr_candidate->get_bool()) {
-		if (is_bsr_preferred(msg)) {
+		if (ispref) {
 			/* -> C-BSR state */
 			switch_bsr_state(BSRCandidate);
 			/* Forward BSM; Store RP-Set; Set Bootstrap Timer to BS_Timeout */
@@ -263,14 +274,11 @@ void pim_bsr::handle_bootstrap_message(pim_interface *pif, const sockaddr_in6 *f
 			}
 		}
 	} else {
-		bool ispref = is_bsr_preferred(msg);
-
 		if (pim->should_log(INTERNAL_FLOW))
 			log().xprintf("BSM is%s preferred.\n", ispref ? "" : " not");
 
-		if ((m_nc_bsr_state == NCNoInfo
-		     || m_nc_bsr_state == NCAcceptAny) || ispref) {
-
+		if (ispref || (m_nc_bsr_state == NCNoInfo
+		     || m_nc_bsr_state == NCAcceptAny)) {
 			/* -> AcceptPreferred state */
 			change_nc_state(NCAcceptPreferred);
 

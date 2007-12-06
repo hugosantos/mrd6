@@ -326,6 +326,12 @@ pim_bootstrap_group_def *pim_bootstrap_message::grps() const {
 	return (pim_bootstrap_group_def *)(((uint8_t *)this) + sizeof(*this));
 }
 
+bool
+pim_bootstrap_message::no_forward() const
+{
+	return (resv1 & (1 << 7)) != 0;
+}
+
 void pim_candidate_rp_adv_message::construct(uint8_t pfxct, uint8_t prio,
 					     uint16_t ht, const in6_addr &addr) {
 	pim_message::construct(pim_msg_candidate_rp_adv);
