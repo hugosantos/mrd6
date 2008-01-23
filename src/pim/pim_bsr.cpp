@@ -953,9 +953,9 @@ void pim_rp_set::handle_entry_timeout(entry * &ent) {
 	if (g->entries.empty()) {
 		m_db.remove(g);
 		delete g;
-
-		pim->bsr().broadcast_rp_set_changed(this);
 	}
+
+	pim->bsr().broadcast_rp_set_changed(this);
 }
 
 bool pim_rp_set::output_info(base_stream &ctx, const std::vector<std::string> &) const {
