@@ -1070,7 +1070,12 @@ static inline uint32_t _hash_ipv6(const in6_addr *addr) {
 static inline uint32_t _one_hash(uint32_t _g, const in6_addr *addr) {
 	uint32_t hash = _hash_ipv6(addr);
 
-	return (1103515245UL * ((1103515245UL * _g + 12345) ^ hash) + 12345);
+	/* Value(G,M,C(i)) =
+	 * 	(1103515245 * ((1103515245 * (G&M)+12345) XOR C(i)) + 12345)
+	 * 		mod 2^31 */
+
+	return ((1103515245UL
+			* ((1103515245UL * _g + 12345) ^ hash) + 12345) & 0x7fffffff);
 }
 
 inet6_addr pim_rp_set::rp_for(const inet6_addr &grp) const {
@@ -1085,10 +1090,6 @@ inet6_addr pim_rp_set::rp_for(const inet6_addr &grp) const {
 		entry *picked = *g->entries.begin();
 		std::list<entry *>::iterator i = g->entries.begin();
 		++i;
-
-		/* Value(G,M,C(i)) =
-		 * 	(1103515245 * ((1103515245 * (G&M)+12345) XOR C(i)) + 12345)
-		 * 		mod 2^31 */
 
 		in6_addr masked_group = grp.addr;
 		if (m_hashmask < 128) {
