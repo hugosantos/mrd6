@@ -424,30 +424,23 @@ void _debug_pim_dump(base_stream &os, const pim_bootstrap_message &msg, int len)
 		   msg.bsr_address.addr, (uint32_t)ntoh(msg.fragment),
 		   (uint32_t)msg.hash_masklen, (uint32_t)msg.bsr_priority);
 
-	pim_bootstrap_group_def *grp = msg.grps();
-	int groupcount = 0, i = sizeof(pim_bootstrap_message);
-
-	while (true) {
-		i += grp->length();
-
-		if (i == len)
-			break;
-		else if (i > len) {
+	int off = sizeof(pim_bootstrap_message);
+	for (pim_bootstrap_group_def *grp
+			= msg.grps(); off < len; grp = grp->next()) {
+		if ((off + (int)sizeof(pim_bootstrap_group_def)) > len
+			|| (off + grp->length()) > len) {
 			os.writeline("Badly formed message.");
 			return;
 		}
 
-		if (grp->fragrp > 0)
-			groupcount++;
-
-		grp = grp->next();
+		off += grp->length();
 	}
-
-	grp = msg.grps();
 
 	os.inc_level();
 
-	for (i = 0; i < groupcount; i++) {
+	off = sizeof(pim_bootstrap_message);
+	for (pim_bootstrap_group_def *grp
+			= msg.grps(); off < len; grp = grp->next()) {
 		os.writeline(inet6_addr(grp->grpaddr.addr, grp->grpaddr.masklen));
 
 		os.inc_level();
@@ -463,7 +456,7 @@ void _debug_pim_dump(base_stream &os, const pim_bootstrap_message &msg, int len)
 
 		os.dec_level();
 
-		grp = grp->next();
+		off += grp->length();
 	}
 
 	os.dec_level();
