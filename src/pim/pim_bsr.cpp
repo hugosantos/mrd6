@@ -1067,9 +1067,10 @@ static inline uint32_t _hash_ipv6(const in6_addr *addr) {
 			((const uint32_t *)addr)[2] ^ ((const uint32_t *)addr)[3];
 }
 
-static inline uint32_t _one_hash(uint32_t _g, uint32_t _m, const in6_addr *addr) {
-	return (0x41c64e6d * ((0x41c64e6d * (_g & _m) + 0x3039) ^ _hash_ipv6(addr))
-		+ 0x3039);
+static inline uint32_t _one_hash(uint32_t _g, const in6_addr *addr) {
+	uint32_t hash = _hash_ipv6(addr);
+
+	return (1103515245UL * ((1103515245UL * _g + 12345) ^ hash) + 12345);
 }
 
 inet6_addr pim_rp_set::rp_for(const inet6_addr &grp) const {
@@ -1085,8 +1086,19 @@ inet6_addr pim_rp_set::rp_for(const inet6_addr &grp) const {
 		std::list<entry *>::iterator i = g->entries.begin();
 		++i;
 
-		uint32_t _g = _hash_ipv6(&grp.addr);
-		uint32_t best = _one_hash(_g, m_hashmask, &picked->rpaddr);
+		/* Value(G,M,C(i)) =
+		 * 	(1103515245 * ((1103515245 * (G&M)+12345) XOR C(i)) + 12345)
+		 * 		mod 2^31 */
+
+		in6_addr masked_group = grp.addr;
+		if (m_hashmask < 128) {
+			masked_group.s6_addr[m_hashmask / 8] &= 0xff << (8 - (m_hashmask % 8));
+			for (int i = (m_hashmask + 7) / 8; i < 16; i++)
+				masked_group.s6_addr[i] = 0;
+		}
+
+		uint32_t _g = _hash_ipv6(&masked_group);
+		uint32_t best = _one_hash(_g, &picked->rpaddr);
 
 		for (; i != g->entries.end(); ++i) {
 			entry *potential = *i;
@@ -1094,8 +1106,9 @@ inet6_addr pim_rp_set::rp_for(const inet6_addr &grp) const {
 			if (potential->prio != picked->prio)
 				break;
 
-			uint32_t hash = _one_hash(_g, m_hashmask, &potential->rpaddr);
-			if (hash > best || (hash == best && picked->rpaddr < potential->rpaddr)) {
+			uint32_t hash = _one_hash(_g, &potential->rpaddr);
+			if (hash > best
+				|| (hash == best && picked->rpaddr < potential->rpaddr)) {
 				picked = potential;
 				best = hash;
 			}
