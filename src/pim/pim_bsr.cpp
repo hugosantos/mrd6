@@ -851,6 +851,7 @@ void pim_rp_set::store_from_message(const in6_addr &from, pim_bootstrap_message 
 				ent->prio = rp->priority;
 				ent->rpaddr = rp->addr.addr;
 				g->insert_entry(ent);
+				changed = true;
 			} else {
 				ent = *k;
 			}
