@@ -41,9 +41,6 @@ void usage() {
 }
 
 int main(int argc, char **argv) {
-	// init random seed
-	srand(time(NULL));
-
 	mrd m;
 
 	static option longopts[] = {
