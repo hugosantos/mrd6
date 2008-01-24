@@ -39,7 +39,7 @@
 bsd_rib::bsd_rib()
 	: evsock("rib events", this, std::mem_fun(&bsd_rib::data_pending)) {
 
-	rtseq = rand();
+	rtseq = mrd::get_randu32();
 }
 
 bool bsd_rib::check_startup() {

@@ -436,6 +436,8 @@ public:
 	base_stream &log() const;
 	base_stream &fatal() const;
 
+	static uint32_t get_randu32();
+
 protected:
 
 	virtual group *allocate_group(const inet6_addr &, groupconf *) const;

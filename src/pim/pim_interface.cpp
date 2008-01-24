@@ -82,7 +82,7 @@ pim_interface::pim_interface()
 
 	intf_state = NOT_READY;
 
-	gen_id = rand();
+	gen_id = mrd::get_randu32();
 
 	elected_dr = 0;
 	m_landelay_enabled = true;
@@ -397,7 +397,7 @@ void pim_interface::handle_hello(const sockaddr_in6 *from,
 	bool has_dr_priority = false;
 	uint32_t dr_priority = 0;
 	bool has_genid = false;
-	uint32_t genid = rand();
+	uint32_t genid = mrd::get_randu32();
 	bool has_lan_delay = false;
 	uint16_t propdelay = 0, overrinter = 0;
 	bool trackbit = false;
@@ -1098,7 +1098,7 @@ uint32_t pim_interface::suppressed_value() const {
 	uint32_t a = (uint32_t)(conf()->joinprune_interval() * 1.1);
 	uint32_t b = (uint32_t)(conf()->joinprune_interval() * 1.4);
 
-	return a + rand() % (b-a);
+	return a + mrd::get_randu32() % (b-a);
 }
 
 void pim_interface::elect_subnet_dr() {

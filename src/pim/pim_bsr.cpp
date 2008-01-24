@@ -451,7 +451,7 @@ void pim_bsr::send_bootstrap_message(sockaddr_in6 *addr) const {
 
 	pim_bootstrap_message *msg = g_mrd->opktb->header<pim_bootstrap_message>();
 
-	uint16_t fragtag = rand() % 0xffff;
+	uint16_t fragtag = mrd::get_randu32() & 0xffff;
 
 	if (m_bsr_state == BSRElected)
 		msg->construct(fragtag, m_rp_set.get_hashmask(),
@@ -479,7 +479,7 @@ void pim_bsr::send_leave_bootstrap() const {
 		pim_bootstrap_message *msg =
 			g_mrd->opktb->header<pim_bootstrap_message>();
 
-		msg->construct(rand() % 0xffff, m_rp_set.get_hashmask(),
+		msg->construct(mrd::get_randu32() & 0xffff, m_rp_set.get_hashmask(),
 						0, pim->my_address());
 
 		pim->send_all(msg, sizeof(pim_bootstrap_message));
@@ -517,7 +517,7 @@ uint32_t pim_bsr::bsr_rand_override() const {
 	return (uint32_t)((5. + 2 * ::log((double)(1 + m_bsr_preferred_priority -
 					m_p_bsr_priority->get_unsigned())) / ::log(2)) * 1000.);
 #else
-	return rand() % 5000;
+	return mrd::get_randu32() % 5000;
 #endif
 }
 
@@ -564,7 +564,7 @@ void pim_bsr::has_new_bsr(bool local) {
 
 	if (m_bsr_state == BSRElected || !m_bsr_preferred.is_any()) {
 		m_rp_adv_count = BSRInitialCRPAdvCount;
-		m_rp_adv_timer.start(rand() % BSRInitialCRPAdvPeriod, true);
+		m_rp_adv_timer.start(mrd::get_randu32() % BSRInitialCRPAdvPeriod, true);
 	}
 }
 

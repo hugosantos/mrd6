@@ -160,7 +160,7 @@ void mrdisc_module::register_send_adv(interface *intf, int maxwhen) {
 						   intf->index());
 
 	if (tmr) {
-		tmr->start(rand() % maxwhen);
+		tmr->start(mrd::get_randu32() % maxwhen);
 
 		m_solicited.push_back(tmr);
 	}

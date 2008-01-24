@@ -42,6 +42,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdarg>
+#include <cstdlib>
 #include <errno.h>
 
 #include <unistd.h>
@@ -923,6 +924,36 @@ static void handle_sigsegv(int id, siginfo_t *info, void *ptr) {
 	exit(SIGSEGV);
 }
 
+static bool
+get_seed_from_file(const char *path, uint32_t *value)
+{
+	int fd = open(path, O_RDONLY | O_NONBLOCK);
+	if (fd < 0)
+		return false;
+
+	int len = read(fd, value, 4);
+
+	close(fd);
+
+	return len == 4;
+}
+
+static uint32_t
+get_random_seed()
+{
+	uint32_t value;
+
+	if (get_seed_from_file("/dev/urandom", &value))
+		return value;
+
+	/* Not all systems have a /dev/urandom */
+
+	if (get_seed_from_file("/dev/random", &value))
+		return value;
+
+	return time(NULL);
+}
+
 bool mrd::check_startup(const char *conffile, bool autoload) {
 	change_state(PreConfiguration);
 
@@ -942,6 +973,8 @@ bool mrd::check_startup(const char *conffile, bool autoload) {
 		|| !m_intflist_node.check_startup()
 		|| !m_grplist_node.check_startup())
 		return false;
+
+	srand(get_random_seed());
 
 	import_methods(mrd_methods);
 
@@ -2507,3 +2540,8 @@ mrd_module::mrd_module(mrd *m, void *dlhandle)
 mrd_module::~mrd_module() {
 }
 
+uint32_t
+mrd::get_randu32()
+{
+	return rand() * 12345;
+}

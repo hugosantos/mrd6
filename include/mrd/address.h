@@ -28,6 +28,8 @@
 #include <stdint.h>
 #include <netinet/in.h>
 
+#include <cstring>
+
 #include <map>
 #include <string>
 #include <vector>

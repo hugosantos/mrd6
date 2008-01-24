@@ -171,7 +171,7 @@ void timermgr::start_timer(timer_base *def, uint32_t interval, uint32_t perturb)
 
 	if (perturb) {
 		int32_t i = interval;
-		i += (rand() % (2 * perturb) - perturb);
+		i += (mrd::get_randu32() % (2 * perturb) - perturb);
 		interval = std::max(i, 0);
 	}
 

@@ -1230,7 +1230,7 @@ void pim_group_source_state::register_stop() {
 		pim_intfconf_node *conf = (pim_intfconf_node *)m_iif->conf()->get_child("pim");
 
 		uint32_t regsupr = conf->register_supression_timeout();
-		uint32_t val = regsupr / 2 + ((rand() % 100) * regsupr) / 100;
+		uint32_t val = regsupr / 2 + ((mrd::get_randu32() % 100) * regsupr) / 100;
 
 		uint32_t probe = conf->probe_time();
 
