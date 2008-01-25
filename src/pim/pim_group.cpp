@@ -1002,7 +1002,6 @@ void pim_group_node::report_forward_to_rp_failure() {
 void pim_group_node::property_changed(node *n, const char *name) {
 	if (!strcmp(name, "rp")) {
 		set_rp();
-	} else if (name == "use_spt") {
 	}
 }
 

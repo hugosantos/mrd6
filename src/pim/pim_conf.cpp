@@ -287,7 +287,7 @@ bool pim_groupconf_node::set_property(const char *key, const char *value) {
 	} else if (!strcmp(key, "accept_rp")) {
 		if (!strcmp(value, "none")) {
 			return set_property_inst("rp", property_def::VAL_ADDRESS, "::/128");
-		} else if (value == "embedded") {
+		} else if (strcmp(value, "embedded") == 0) {
 			inet6_addr tmp;
 			if (!pim_group_node::calculate_embedded_rp_addr(((groupconf *)parent())->id(), tmp)) {
 				if (pim->should_log(WARNING)) {

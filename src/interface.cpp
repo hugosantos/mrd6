@@ -153,7 +153,7 @@ intfconf_node::intfconf_node(intfconf *parent, const char *name)
 }
 
 node *intfconf_node::next_similiar_node() const {
-	if (parent()->name() == "all")
+	if (strcmp(parent()->name(), "all") == 0)
 		return 0;
 	return g_mrd->default_interface_configuration()->get_child(name());
 }

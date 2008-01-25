@@ -1112,7 +1112,7 @@ void bgp_neighbor::prefix_added(const inet6_addr &prefix, mrib_def::metric_def m
 		if (mode() == IBGP && ((bgp_neighbor *)pinfo.owner)->mode() == IBGP)
 			return;
 
-		if (mode() == EBGP && !bgppinfo->should_export || !bgppinfo->should_advertise)
+		if (mode() == EBGP && (!bgppinfo->should_export || !bgppinfo->should_advertise))
 			return;
 	}
 
@@ -1888,7 +1888,7 @@ bool bgp_acl::prefix(const std::vector<std::string> &args) {
 			++i;
 			if (i == args.end())
 				return false;
-			if (l && (e.le != -1) || (!l && (e.ge != -1)))
+			if ((l && (e.le != -1)) || (!l && (e.ge != -1)))
 				return false;
 			char *end;
 			uint32_t val = strtoul(i->c_str(), &end, 10);
