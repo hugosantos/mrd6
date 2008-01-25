@@ -5,8 +5,6 @@
 TARGET = mrd6
 DESTDIR = $(CURDIR)/debian/mrd6
 
-CONFS = $(CURDIR)/src/confs/mrd.conf $(CURDIR)/src/confs/mrd.m6bone-bgp.conf $(CURDIR)/src/confs/mrd.m6bone.conf
-
 export TARGET DESTDIR
 
 configure: configure-stamp
@@ -39,13 +37,11 @@ clean:
 	dh_testroot
 
 	-$(MAKE) clean
-	rm -f src/modules.generated.cpp
+	rm -rf src/build/
 	rm -f src/Makefile.options
 	rm -f build-stamp configure-stamp
 
 	dh_clean
-	# odd these are left behind
-	rm -f debian/*.debhelper
 
 install: build
 	dh_testdir
@@ -54,13 +50,6 @@ install: build
 	dh_installdirs
 
 	$(MAKE) install
-
-	dh_installexamples $(CONFS)
-	dh_installdocs $(CURDIR)/README
-	dh_installdocs $(CURDIR)/MRD6shQuickRef.txt
-	dh_installdocs $(CURDIR)/Troubleshooter
-	dh_installman $(CURDIR)/docs/mrd6.8
-	dh_installman $(CURDIR)/docs/mrd6sh.1
 
 # Build architecture-independent files here.
 binary-indep: build install
@@ -74,25 +63,12 @@ binary-arch: build install
 	dh_installdocs
 	dh_installexamples
 #	dh_install
-#	dh_installmenu
-#	dh_installdebconf
-#	dh_installlogrotate
-#	dh_installemacsen
-#	dh_installcatalogs
-#	dh_installpam
-#	dh_installmime
 	dh_installinit
-#	dh_installcron
-#	dh_installinfo
-#	dh_undocumented
 	dh_installman
 	dh_link
 	dh_strip
 	dh_compress
 	dh_fixperms
-#	dh_perl
-#	dh_python
-#	dh_makeshlibs
 	dh_installdeb
 	dh_shlibdeps
 	dh_gencontrol

@@ -1,0 +1,6 @@
+version=3
+# Using example fron the uscan man page:
+# This is a variant HTTP format which allows direct specification of
+# the homepage:
+# Homepage  Pattern  [Version  [Action]]
+http://fivebits.net/proj/mrd6 /files/mrd6/mrd6-([\d\.-]*).tar.gz
