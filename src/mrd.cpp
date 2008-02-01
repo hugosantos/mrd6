@@ -2338,7 +2338,8 @@ bool mrd::show_info(base_stream &out, const std::vector<std::string> &ctx) {
 
 	out.xprintf("Uptime: %{duration}\n", time_duration((time(0) - m_startup) * 1000));
 	out.xprintf("Performed tasks: %u (spent %llu ms)\n", m_tasks_stat, m_tasks_time_spent);
-	out.xprintf("Registered sockets: %u reading, %u writing\n", m_read.size(), m_write.size());
+	out.xprintf("Registered sockets: %u reading, %u writing\n",
+		(uint32_t)m_read.size(), (uint32_t)m_write.size());
 	out.xprintf("MRIB prefix count: %u\n", mrib().registry_prefix_count());
 	out.xprintf("Interface count: %u\n", m_intflist.size());
 	out.xprintf("Group state count: %u\n", m_grplist.size());
