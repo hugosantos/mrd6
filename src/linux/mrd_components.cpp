@@ -92,8 +92,6 @@ void *mrd::posix_uctx::get_current_frame() const {
 #if defined(__GLIBC__)
 #if defined(__i386__)
 	return (void *)base->uc_mcontext.gregs[REG_EIP];
-#elif defined(__mips__)
-	return (void *)base->uc_mcontext.gpregs[CTX_EPC];
 #endif
 #endif
 	return 0;
