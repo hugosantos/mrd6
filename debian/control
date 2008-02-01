@@ -3,7 +3,8 @@ Section: net
 Priority: optional
 Maintainer: Hugo Santos <hugo@fivebits.net>
 Build-Depends: debhelper (>= 5.0.0), perl
-Standards-Version: 3.7.2.2
+Standards-Version: 3.7.3
+Homepage: http://fivebits.net/proj/mrd6/
 
 Package: mrd6
 Architecture: any

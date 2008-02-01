@@ -36,7 +36,7 @@ clean:
 	dh_testdir
 	dh_testroot
 
-	-$(MAKE) clean
+	[ ! -f Makefile ] || -$(MAKE) clean
 	rm -rf src/build/
 	rm -f src/Makefile.options
 	rm -f build-stamp configure-stamp
