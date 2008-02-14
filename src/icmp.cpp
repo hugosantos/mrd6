@@ -95,7 +95,7 @@ void icmp_base::icmp_message_available(interface *intf, const in6_addr &src,
 		i->second->icmp_message_available(intf, src, dst, hdr, len);
 	} else {
 		if (g_mrd->should_log(MESSAGE_CONTENT)) {
-			g_mrd->log().xprintf("[ICMPv6] No handler for type ",
+			g_mrd->log().xprintf("[ICMPv6] No handler for type "
 					     "%i.\n", (int)hdr->icmp6_type);
 		}
 	}
