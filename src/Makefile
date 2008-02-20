@@ -158,7 +158,7 @@ install: $(TARGET) $(EXTERNAL_MODULES)
 	install -D ../tools/mrd6sh $(DEST_PREFIX)/bin/mrd6sh
 ifneq (,$(EXTERNAL_MODULES))
 	mkdir -p $(DEST_PREFIX)/lib/mrd6/
-	install -D $(EXTERNAL_MODULES) $(DEST_PREFIX)/lib/mrd6/
+	cp $(EXTERNAL_MODULES) $(DEST_PREFIX)/lib/mrd6/
 endif
 
 $(MRD_VERSION_CPP): $(SOURCES) Makefile Makefile.options
