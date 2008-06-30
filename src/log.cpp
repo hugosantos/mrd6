@@ -667,3 +667,12 @@ void stream_push_formated_type(base_stream &os, const void *val) {
 	os.nprintf(32, "%p", val);
 }
 
+#ifdef __s390__
+const char *stream_type_format_parameter(size_t) {
+	return "u";
+}
+
+void stream_push_formated_type(base_stream &os, size_t val) {
+	os.nprintf(32, "%z", val);
+}
+#endif
