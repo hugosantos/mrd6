@@ -1,9 +1,14 @@
-mrd6 (0.9.6) unstable; urgency=low
+mrd6 (0.9.6-2) unstable; urgency=low
+
+  * Now really S390 building issues with GCC 4.3 (Closes: #455280)
+
+ -- Hugo Santos <hugo@fivebits.net>  Fri,  4 Jul 2008 14:59:21 +0200
+
+mrd6 (0.9.6-1) unstable; urgency=low
 
   * New upstream release.
-  * Now really fix FTBFS with GCC 4.3 (Closes: #455280)
 
- -- Hugo Santos <hugo@fivebits.net>  Fri, 25 Jan 2008 13:29:21 +0100
+ -- Hugo Santos <hugo@fivebits.net>  Fri,  4 Jul 2008 14:59:21 +0200
 
 mrd6 (0.9.5-rev3.dfsg-0.2) unstable; urgency=low
 
