@@ -1,6 +1,6 @@
 mrd6 (0.9.6-2) unstable; urgency=low
 
-  * Now really S390 building issues with GCC 4.3 (Closes: #455280)
+  * Now really fix S390 building issues (Closes: #455280)
 
  -- Hugo Santos <hugo@fivebits.net>  Fri,  4 Jul 2008 14:59:21 +0200
 
