@@ -412,7 +412,7 @@ void pim_neighbour::output_info(base_stream &ctx, bool extended) const {
 	}
 
 	if (!n_secaddrs.empty()) {
-		ctx.writeline("Secundary-Addresses:");
+		ctx.writeline("Secondary-Addresses:");
 		ctx.inc_level();
 		for (std::set<in6_addr>::const_iterator k = n_secaddrs.begin();
 						k != n_secaddrs.end(); k++)

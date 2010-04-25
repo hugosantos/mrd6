@@ -321,7 +321,7 @@ static inline int type_as_syslog_priority(int t) {
 }
 
 void syslog_log_node::log(int type, int level, const char *msg, bool) {
-	syslog(type_as_syslog_priority(type), msg);
+	syslog(type_as_syslog_priority(type), "%s", msg);
 }
 
 tb_log_node::tb_log_node(log_base *parent, const char *name, int level)

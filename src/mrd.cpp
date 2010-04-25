@@ -61,6 +61,8 @@
 
 #include <sys/utsname.h>
 
+#include <limits.h>
+
 #ifndef IPV6_RECVPKTINFO
 #define IPV6_RECVPKTINFO IPV6_PKTINFO
 #endif
@@ -2341,8 +2343,8 @@ bool mrd::show_info(base_stream &out, const std::vector<std::string> &ctx) {
 	out.xprintf("Registered sockets: %u reading, %u writing\n",
 		(uint32_t)m_read.size(), (uint32_t)m_write.size());
 	out.xprintf("MRIB prefix count: %u\n", mrib().registry_prefix_count());
-	out.xprintf("Interface count: %u\n", m_intflist.size());
-	out.xprintf("Group state count: %u\n", m_grplist.size());
+	out.xprintf("Interface count: %u\n", (uint32_t)m_intflist.size());
+	out.xprintf("Group state count: %u\n", (uint32_t)m_grplist.size());
 
 	return true;
 }
@@ -2432,7 +2434,7 @@ void mrd::dump_commands(base_stream &_out, const node *n,
 			i != nodeprops.end(); ++i) {
 		if (i->second.is_method() && !(i->second.flags() & property_def::DEFAULT_VALUE)) {
 			if (i->second.is_readonly())
-				_out.write("show");
+				_out.write("show ");
 			_out.xprintf("%s%s\n", path.c_str(), i->first.c_str());
 			if (i->second.get_method_info()->flags & property_def::NEGATE)
 				_out.xprintf("%sno %s\n", path.c_str(), i->first.c_str());

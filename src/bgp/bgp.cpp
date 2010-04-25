@@ -38,6 +38,8 @@
 
 #include <map>
 
+#include <limits.h>
+
 class bgp_module;
 
 static const bgp_community no_export(65535, 65281);

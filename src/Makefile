@@ -92,7 +92,7 @@ TESTS = tests/address_unittest tests/ptree_unittest tests/mrib_unittest
 DEST_PREFIX = $(DESTDIR)$(PREFIX)
 
 CXXFLAGS = $(INCLUDES) -ansi -Wall -Wno-multichar -fno-exceptions -fPIC \
-	   -D$(PLATFORM) $(addprefix -D,$(MODULE_OPTIONS))
+	   -fno-strict-aliasing -D$(PLATFORM) $(addprefix -D,$(MODULE_OPTIONS))
 
 ifeq ($(OPTIMIZE),yes)
 	ifeq ($(SPACE_OPTIMIZE),yes)

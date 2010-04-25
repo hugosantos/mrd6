@@ -160,7 +160,7 @@ void us_mfa_group_source::clear_interface_references(const inet6_addr &grpid, in
 	if (has_oif(intf)) {
 		if (mfa_core::mfa()->should_log(EXTRADEBUG)) {
 			mfa_core::mfa()->log().xprintf(
-				"(%{addr}, %{Addr}) releasing Oif %s as it was"
+				"(%{addr}, %{Addr}) releasing Oif %s as it was "
 				"removed.\n", m_addr, grpid, intf->name());
 		}
 
@@ -189,7 +189,7 @@ void us_mfa_group_source::output_info(base_stream &out, bool counters, bool noem
 		out.inc_level();
 
 		if (stat_packet_count60s) {
-			out.write("Activity statistics: ");
+			out.write(" Activity statistics: ");
 
 			const char *format = "%.2f %s";
 			double rate = 8 * stat_octet_count60s / 60000.;
@@ -208,7 +208,7 @@ void us_mfa_group_source::output_info(base_stream &out, bool counters, bool noem
 				   stat_octet_count60s / (double)stat_packet_count60s);
 			out.newl();
 		} else {
-			out.writeline("No activity in the last 60 seconds");
+			out.writeline(" No activity in the last 60 seconds");
 		}
 
 		out.dec_level();
