@@ -122,7 +122,8 @@ void pim_interface::attached(interface *intf) {
 }
 
 void pim_interface::shutdown() {
-	send_hellox(0);
+	if (get_state() != NOT_READY)
+		send_hellox(0);
 
 	neighbours_def n = neighbours;
 
