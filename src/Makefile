@@ -2,7 +2,7 @@
 
 CXX ?= g++
 
-PLATFORM ?= OS_LINUX
+PLATFORM ?= OS_OTHER
 SUPPORT_MODULES ?= yes
 TARGET ?= mrd
 PREFIX ?= /usr/local
@@ -16,6 +16,14 @@ MRD_VERSION_CPP = $(OBJ_DIR)/mrd.version.cpp
 MODULES_CPP = $(OBJ_DIR)/modules.cpp
 
 STATIC_MODULES ?= MLD PIM CONSOLE
+
+KERNEL = $(shell uname -s)
+ifeq ($(KERNEL),Linux)
+	PLATFORM = OS_LINUX
+endif
+ifneq (,$(findstring BSD,$(KERNEL)))
+	PLATFORM = OS_BSD
+endif
 
 ifeq ($(FULL_STATIC),yes)
 	SUPPORT_MODULES = no
@@ -38,10 +46,11 @@ SOURCES = address.cpp address_set.cpp group.cpp icmp_inet6.cpp icmp.cpp \
 	  parser.cpp rib.cpp router.cpp timers.cpp support/objpool.cpp \
 	  support/ptree.cpp
 
+LDFLAGS += -ldl # mrd.cpp requires dl* functions
+
 ifeq ($(PLATFORM),OS_LINUX)
 	SOURCES += linux/us_mfa.cpp linux/linux_icmp_raw.cpp \
 		   linux/linux_unicast_route.cpp linux/mrd_components.cpp
-	LDFLAGS += -ldl
 endif
 
 ifeq ($(PLATFORM),OS_BSD)
