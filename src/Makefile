@@ -25,6 +25,7 @@ endif
 ifeq ($(SUPPORT_MODULES),yes)
 	MODULES ?= BGP
 	LDCMD = -rdynamic
+	LDMODCMD = -Wl,--as-needed
 else
 	MODULE_OPTIONS += MRD_NO_DYNAMIC_MODULE_LOADING
 endif
@@ -110,6 +111,7 @@ else
 endif
 
 LDFLAGS += -lm
+LDCMD += -Wl,--as-needed
 
 ifeq ($(STATIC_STDCXX),no)
 	LDFLAGS += -lstdc++
@@ -126,7 +128,7 @@ define module_template
 BUILT_SOURCES += $$($(1)_SOURCES)
 $$($(1)_TARGET): $$(addprefix $(OBJ_DIR)/,$($(1)_SOURCES:.cpp=.o))
 	@echo "Module $$($(1)_TARGET)"
-	@$(CXX) -shared $(CXXFLAGS) -o $$($(1)_TARGET) \
+	@$(CXX) -shared $(LDMODCMD) $(CXXFLAGS) -o $$($(1)_TARGET) \
 		$$(addprefix $(OBJ_DIR)/,$($(1)_SOURCES:.cpp=.o))
 endef
 
