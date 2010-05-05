@@ -1,4 +1,8 @@
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
 -include Makefile.options
+endif
+endif
 
 CXX ?= g++
 
