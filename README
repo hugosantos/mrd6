@@ -1,94 +1,30 @@
-MRD - Multicast Routing Daemon
-------------------------------
+This is mrd6, a ipv6 multicast routing daemon for Linux (and BSD).
 
-  MRD is a IPv6 Multicast routing Daemon for Linux.
+It supports MLDv2 (and MLDv1 compatibility), PIM-SM (including SSM
+support, BSR and Embedded-RP), partial MBGP support (IPv6 multicast
+SAFI to populate the local mrib, when used in an edge), native and
+virtual interfaces (ipv6-ipv4, ipv6-ipv6 and tun/tap tunnels have
+all been tested extensively) as well as remote configuration (via CLI).
 
-  MRD is written in C++ and has been primarily developed in Linux 2.6.
+You may use mrd6 with any Linux 2.6 based system as no kernel support
+for ipv6 multicast forwarding is required, that feature is implemented
+by mrd6 itself.
 
-  Send any bugs or issues to Hugo Santos <hugo@fivebits.net>
+Build requirements: a GNU build system, including G++ and Make.
 
-Features
---------
+To build the default configuration, just run 'make', a 'mrd6' binary
+will be compiled in src/. You can then install it (including
+default configuration files and man pages) into your system using
+'make install'.
 
-  - Extensible modular design;
-  - MLDv1 and MLDv2 support (mld);
-    * MLD Proxying (mld);
-  - PIM-SM support (ASM and SSM) (pim);
-    * Bootstrap (BSR) Mechanism support (pim);
-    * Static RP configuration (pim);
-    * Embedded-RP support (RFC 3956);
-  - partial MBGP support (bgp);
-    * Implements basic BGP4 mechanisms (IPv6 Multicast SAFI)
-      to update local MRIB from MBGP info;
-  - Supports both native and virtual (tunnel) interfaces
-    (tested IPv6-IPv4, IPv6-IPv6 and TUN/TAP tunnels);
-  - Abstract Forwarding Interface (MFA) with user-space module;
-  - Remote configuration and online administration (console);
+For a custom build, run 'make config', where support for individual
+features may be enabled or disabled.
 
-Building
---------
+For more information refer to http://fivebits.net/proj/mrd6/
 
-  Read the included INSTALL file.
+mrd6 started being developed in 2004 and thus it's showing it's age.
+However it is still a useful tool in certain scenarios, including
+quick network prototyping, testing new network features and even to
+run in embedded systems.
 
-Running
--------
-
-  Usage `mrd [options]`
-
-    * Options
-       -D	   Run MRD in the background
-       -f <conf>   Use `conf` as the configuration file. The default configuration
-                   file is '/etc/mrd.conf' or if it doesn't exist, the 'mrd.conf'
-		   file in the running directory.
-
-Configuration File
-------------------
-
-  The configuration file follows a hierarchical definition using `identifier { ... }` blocks.
-
-  The `interfaces` and `groups` keywords specify both interface and group configuration.
-
-  * Example
-	pim {
-	  enable bsr-candidate; /* we are a BSR candidate */
-	  enable rp-candidate; /* we are a RP candidate */
-	}
-	groups {
-	  ff0e::/16 {
-	    pim {
-	      enable rp_adv; /* include this group in the RP advertisement */
-	    }
-	  }
-	}
-
-  There are several example configuration files included in the src/confs/ directory.
-
-Console
--------
-
-  The console module (which is enabled by default) allows you to to
-  control/monitor mrd remotely by using the included 'mrd6sh' program. You may
-  also connect remotely directly to mrd using a standard telnet program and
-  connecting to port 44510.
-
-    telnet -6 ::1 44510
-
-Author and Contact
-------------------
-
-  Hugo Santos <hugo@fivebits.net>
-
-Copyright and Licensing
------------------------
-
-  This MRD release is GPL Licensed (Refer to the included COPYING file for details).
-
-  Copyright (c) 2006-2008 - Hugo Santos
-  Copyright (c) 2004-2006 - Univ. Aveiro, IT Aveiro
-
-Thanks to
----------
-  - Sebastien Chaumontet and Mickael Hoerdt for extensive testing and support;
-  - Bernhard Schmidt for testing and supplying IPv6 multicast connectivity;
-  - Anand Kumria for uploading and maintaining the oficial debian package;
-
+- Hugo Santos <hugo@fivebits.net>
