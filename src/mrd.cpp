@@ -67,6 +67,10 @@
 #define IPV6_RECVPKTINFO IPV6_PKTINFO
 #endif
 
+#if !defined(SA_SIGINFO) && defined(__gnu_hurd__)
+#define SA_SIGINFO 0x00000004u
+#endif
+
 #define CRASH_COMMAND
 
 mrd *g_mrd = 0;
@@ -1977,10 +1981,9 @@ bool mrd::load_modulex(const char *name) {
 		return false;
 	}
 
-	char tmp[PATH_MAX];
-	strncpy(tmp, path.c_str(), sizeof(tmp));
-
-	void *foo = dlopen(tmp, RTLD_NOW | RTLD_GLOBAL);
+	/* There will be a FS limit so don't worry about the size
+	   - Thomas Preud'homme, 11.05.2010, fix for GNU HURD */
+	void *foo = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
 
 	module_init_sig *load = 0;
 	if (foo) {
