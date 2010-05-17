@@ -2,6 +2,8 @@
  * Multicast Routing Daemon (MRD)
  *   linux/linux_icmp_raw.cpp
  *
+ * Copyright (C) 2009 - Teemu Kiviniemi
+ * Copyright (C) 2009 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2006, 2007 - Hugo Santos
  * Copyright (C) 2004..2006 - Universidade de Aveiro, IT Aveiro
  *
@@ -99,7 +101,7 @@ void linux_icmp_raw::data_available(uint32_t) {
 	sockaddr_ll sa;
 	socklen_t salen = sizeof(sa);
 
-	int recvlen = recvfrom(m_rawicmpsock.fd(), ibuffer, sizeof(ibuffer),
+	const int recvlen = recvfrom(m_rawicmpsock.fd(), ibuffer, sizeof(ibuffer),
 			       0, (sockaddr *)&sa, &salen);
 
 	if (recvlen < 0 || sa.sll_protocol != htons(ETH_P_IPV6))
@@ -108,35 +110,60 @@ void linux_icmp_raw::data_available(uint32_t) {
 	if (sa.sll_pkttype == PACKET_OUTGOING)
 		return;
 
+	if (((size_t) recvlen) < sizeof(ip6_hdr))
+		return;
+
 	ip6_hdr *hdr = (ip6_hdr *)ibuffer;
 
-	uint8_t nxt = hdr->ip6_nxt;
-	_ip6_ext *ext = (_ip6_ext *)(ibuffer + sizeof(ip6_hdr));
+	const uint16_t plen = ntohs(hdr->ip6_ctlun.ip6_un1.ip6_un1_plen);
+	if (((size_t) recvlen) < sizeof(ip6_hdr) + plen)
+		return;
 
-	int pointer = sizeof(ip6_hdr);
+	const uint8_t *ip6_end = ibuffer + sizeof(ip6_hdr) + plen;
+
+	uint8_t nxt = hdr->ip6_nxt;
+
+	uint8_t *ptr = ibuffer + sizeof(ip6_hdr);
 
 	bool has_mld_rta = false;
 
-	while (pointer < recvlen && nxt != IPPROTO_ICMPV6) {
+	while (nxt != IPPROTO_ICMPV6) {
+
+		if (ptr + sizeof(_ip6_ext) > ip6_end)
+			return;
+		const _ip6_ext *ext = (_ip6_ext *) ptr;
+
+		uint8_t *hdr_end = ptr + ((ext->ip6e_len + 1) << 3);
+		if (hdr_end >= ip6_end)
+			return;
+
 		if (nxt == IPPROTO_HOPOPTS) {
-			uint8_t *ptr = ibuffer + pointer + 2;
-			uint8_t *endptr = ibuffer + pointer + (ext->ip6e_len + 1) * 8;
-			while (ptr < endptr) {
-				ip6_rta *rta = (ip6_rta *)ptr;
-				if (rta->type == 5) {
-					if (rta->length == 2 && rta->value == 0)
-						has_mld_rta = true;
-				}
-				ptr = ptr + rta->length + 2;
+			ptr += 2;
+			while (ptr + sizeof(ip6_rta) <= hdr_end) {
+				ip6_rta *rta = (ip6_rta *) ptr;
+
+				if (rta->type == 0) {
+					/* Pad1 */
+					ptr++;
+					continue;
+				} else if (rta->type == 5 &&
+					   rta->length == 2 &&
+					   rta->value == 0)
+					has_mld_rta = true;
+
+				ptr += 2 + rta->length;
+
 			}
 		}
-
 		nxt = ext->ip6e_nxt;
-		pointer += (ext->ip6e_len + 1) * 8;
-		ext = (_ip6_ext *)(ibuffer + pointer);
+		ptr = hdr_end;
 	}
 
-	if (nxt != IPPROTO_ICMPV6 || !has_mld_rta)
+	if (ptr + sizeof(icmp6_hdr) > ip6_end)
+		return;
+	icmp6_hdr *icmphdr = (icmp6_hdr *)ptr;
+
+	if (!has_mld_rta)
 		return;
 
 	if (g_mrd->should_log(MESSAGE_SIG)) {
@@ -145,12 +172,11 @@ void linux_icmp_raw::data_available(uint32_t) {
 			     (int)sa.sll_ifindex);
 	}
 
-	icmp6_hdr *icmphdr = (icmp6_hdr *)ext;
 	uint16_t chksum = icmphdr->icmp6_cksum;
 	icmphdr->icmp6_cksum = 0;
 
 	if (ipv6_checksum(IPPROTO_ICMPV6, hdr->ip6_src, hdr->ip6_dst, icmphdr,
-				recvlen - pointer) != chksum) {
+				ip6_end - ptr) != chksum) {
 		if (g_mrd->should_log(MESSAGE_ERR)) {
 			g_mrd->log().xprintf("[ICMPv6] Bad checksum on "
 				     "ICMPv6 message from %{addr}, dropping.\n",
@@ -162,7 +188,7 @@ void linux_icmp_raw::data_available(uint32_t) {
 			return;
 
 		icmp_message_available(intf, hdr->ip6_src, hdr->ip6_dst,
-				       icmphdr, recvlen - pointer);
+				       icmphdr, ip6_end - ptr);
 	}
 }
 

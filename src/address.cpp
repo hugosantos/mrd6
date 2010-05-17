@@ -2,6 +2,8 @@
  * Multicast Routing Daemon (MRD)
  *   address.cpp
  *
+ * Copyright (C) 2009 - Teemu Kiviniemi
+ * Copyright (C) 2009 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2006, 2007 - Hugo Santos
  * Copyright (C) 2004..2006 - Universidade de Aveiro, IT Aveiro
  *
@@ -86,8 +88,23 @@ unsigned inet6_addr::type() const {
 
 	if (IN6_IS_ADDR_MULTICAST(&addr))
 		val |= multicast;
-	if (addr.s6_addr[15] == 0)
+
+	if (prefixlen < 128) {
+		int octet = prefixlen / 8;
+		const int bit = prefixlen % 8;
+		if (bit != 0) {
+			if ((addr.s6_addr[octet] & (0xff >> bit)) != 0)
+				return val;
+			octet++;
+		}
+		for (int i = 15; i >= octet; i--) {
+			if (addr.s6_addr[i] != 0)
+				return val;
+		}
+
+		/* All bits outside the prefix are zero. */
 		val |= network;
+	}
 
 	return val;
 }
