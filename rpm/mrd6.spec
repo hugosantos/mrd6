@@ -41,7 +41,7 @@ PREFIX=%{_prefix} DESTDIR=%{buildroot} make install
 
 %files
 %defattr(-, root, root)
-%doc README MRD6shQuickRef.txt src/confs/mrd.conf
+%doc README README.translator MRD6shQuickRef.txt src/confs/mrd.conf
 %{_prefix}/sbin/mrd6
 %{_prefix}/lib/mrd6/*
 %{_prefix}/bin/mrd6sh

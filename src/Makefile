@@ -55,7 +55,8 @@ LDFLAGS += -ldl # mrd.cpp requires dl* functions
 
 ifeq ($(PLATFORM),OS_LINUX)
 	SOURCES += linux/us_mfa.cpp linux/linux_icmp_raw.cpp \
-		   linux/linux_unicast_route.cpp linux/mrd_components.cpp
+		   linux/linux_unicast_route.cpp linux/mrd_components.cpp \
+		   linux/translator.cpp
 endif
 
 ifeq ($(PLATFORM),OS_BSD)

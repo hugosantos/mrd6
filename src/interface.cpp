@@ -2,6 +2,8 @@
  * Multicast Routing Daemon (MRD)
  *   interface.cpp
  *
+ * Copyright (C) 2009 - Teemu Kiviniemi
+ * Copyright (C) 2009 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2006, 2007 - Hugo Santos
  * Copyright (C) 2004..2006 - Universidade de Aveiro, IT Aveiro
  *
@@ -275,6 +277,11 @@ void interface::change_state(kernel_state newstate) {
 	mif_state = newstate;
 
 	broadcast_change_state(wasdown);
+}
+
+/* Is the interface a virtual interface? */
+bool interface::is_virtual() {
+	return mif_type == IPv4_Translator;
 }
 
 void interface::broadcast_change_state(bool wasdown) {

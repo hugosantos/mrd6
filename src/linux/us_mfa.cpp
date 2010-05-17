@@ -2,6 +2,8 @@
  * Multicast Routing Daemon (MRD)
  *   us_mfa.cpp
  *
+ * Copyright (C) 2009 - Teemu Kiviniemi
+ * Copyright (C) 2009 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2006, 2007 - Hugo Santos
  * Copyright (C) 2004..2006 - Universidade de Aveiro, IT Aveiro
  *
@@ -77,6 +79,18 @@ void us_mfa_group_source::release_iif(interface *iif) {
 void us_mfa_group_source::add_oif(interface *oif) {
 	if (!has_oif(oif)) {
 		m_oifs.push_back(oif);
+
+#ifndef LINUX_NO_TRANSLATOR
+		us_mfa *mfa = (us_mfa *) g_mrd->mfa();
+		const in6_addr &grp = *m_owner->m_addr;
+
+		/* Inform translator about the MTU of oif. */
+		mfa->m_translator.set_mtu(grp, oif->mtu());
+
+		/* First oif. Enable source state in translator. */
+		if (m_oifs.size() == 1)
+			mfa->m_translator.change_source_state(grp, m_addr, true);
+#endif
 	}
 }
 
@@ -84,6 +98,14 @@ void us_mfa_group_source::release_oif(interface *oif) {
 	for (oifs::iterator k = m_oifs.begin(); k != m_oifs.end(); ++k) {
 		if (*k == oif) {
 			m_oifs.erase(k);
+#ifndef LINUX_NO_TRANSLATOR
+			if (m_oifs.size() == 0) {
+				/* Last oif. Disable source state in translator. */
+				us_mfa *mfa = (us_mfa *) g_mrd->mfa();
+				mfa->m_translator.change_source_state(*m_owner->m_addr,
+						m_addr, false);
+			}
+#endif
 			return;
 		}
 	}
@@ -231,6 +253,10 @@ void us_mfa_group_source::get_forwarding_counter(uint64_t &bytes) const {
 us_mfa_group::us_mfa_group(router *owner, const inet6_addr &id)
 	: mfa_group(owner) {
 
+#ifndef LINUX_NO_TRANSLATOR
+	m_addr = id.address_p();
+#endif
+
 	instowner = 0;
 
 	us_mfa *m = (us_mfa *)g_mrd->mfa();
@@ -293,6 +319,13 @@ void us_mfa_group::clear_interface_references(const inet6_addr &grpid, interface
 void us_mfa_group::invalidate_source_cache() {
 	memset(m_source_cache, 0, sizeof(m_source_cache));
 }
+
+#ifndef LINUX_NO_TRANSLATOR
+/* Group address */
+const in6_addr &us_mfa_group::id() const {
+	return *m_addr;
+}
+#endif
 
 mfa_group_source *us_mfa_group::create_source_state(const in6_addr &addr, void *instowner) {
 	mfa_group_source *src = get_source_state(addr);
@@ -426,6 +459,9 @@ mfa_group *us_mfa::create_group(router *r, const inet6_addr &id, void *instowner
 			if (mfa_core::mfa()->should_log(EXTRADEBUG))
 				mfa_core::mfa()->log().xprintf("Create state for group %{Addr}.\n", id);
 
+#ifndef LINUX_NO_TRANSLATOR
+			m_translator.change_group_state(id, true);
+#endif
 			m_groups[id] = (us_mfa_group *)grp;
 
 			m_singles.clear();
@@ -451,6 +487,10 @@ mfa_group *us_mfa::get_group(const inet6_addr &id) const {
 void us_mfa::release_group(mfa_group *grp) {
 	for (groups::iterator i = m_groups.begin(); i != m_groups.end(); ++i) {
 		if (grp == i->second) {
+
+#ifndef LINUX_NO_TRANSLATOR
+			m_translator.change_group_state(i->first, false);
+#endif
 			delete i->second;
 
 			m_groups.erase(i);
@@ -479,6 +519,9 @@ void us_mfa::invalidate_group_cache(const in6_addr &addr) {
 us_mfa::us_mfa()
 	: m_rawsock("us-mfa sock", this,
 		    std::mem_fun(&us_mfa::data_available)),
+#ifndef LINUX_NO_TRANSLATOR
+	  m_translator(this),
+#endif
 	  m_stat_timer("mfa stat update timer", this,
 		       std::mem_fun(&us_mfa::update_stats), 2000, true) {
 #ifndef LINUX_NO_MMAP
@@ -497,6 +540,11 @@ us_mfa::us_mfa()
 bool us_mfa::pre_startup() {
 	if (!mfa_core::pre_startup())
 		return false;
+
+#ifndef LINUX_NO_TRANSLATOR
+	if (!m_translator.pre_startup())
+		return false;
+#endif
 
 	if (!m_sourcedisc.check_startup())
 		return false;
@@ -518,6 +566,11 @@ bool us_mfa::check_startup() {
 		}
 		return false;
 	}
+
+#ifndef LINUX_NO_TRANSLATOR
+	if (!m_translator.check_startup())
+		return false;
+#endif
 
 #ifndef LINUX_NO_MMAP
 	if (g_mrd->has_property("mfa-framesize")) {
@@ -755,6 +808,9 @@ void us_mfa::send_icmpv6_toobig(interface *intf, ip6_hdr *hdr, uint16_t len) con
 }
 
 void us_mfa::added_interface(interface *intf) {
+	if (intf->is_virtual())
+		return;
+
 	packet_mreq mreq;
 	memset(&mreq, 0, sizeof(mreq));
 
@@ -772,6 +828,9 @@ void us_mfa::added_interface(interface *intf) {
 }
 
 void us_mfa::removed_interface(interface *intf) {
+	if (intf->is_virtual())
+		return;
+
 	packet_mreq mreq;
 	memset(&mreq, 0, sizeof(mreq));
 

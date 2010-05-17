@@ -129,6 +129,7 @@ public:
 		IEEE1394,
 		IEEE802_11,
 		IEEE802_1Q,
+		IPv4_Translator,
 	};
 
 	enum kernel_state {
@@ -146,6 +147,9 @@ public:
 	bool up(bool ignoremrd = false) const;
 
 	void change_state(kernel_state);
+
+	/* Is the interface a virtual interface? */
+	bool is_virtual();
 
 	/* returns true if this interface is attached
 	 * to a multi-access LAN */

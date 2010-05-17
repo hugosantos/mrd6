@@ -2,6 +2,8 @@
  * Multicast Routing Daemon (MRD)
  *   us_mfa.h
  *
+ * Copyright (C) 2009 - Teemu Kiviniemi
+ * Copyright (C) 2009 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2006, 2007 - Hugo Santos
  * Copyright (C) 2004..2006 - Universidade de Aveiro, IT Aveiro
  *
@@ -30,6 +32,10 @@
 #include <mrd/address.h>
 #include <mrd/interface.h>
 #include <mrd/timers.h>
+
+#ifndef LINUX_NO_TRANSLATOR
+#include <mrdpriv/linux/translator.h>
+#endif
 
 #include <stdint.h>
 
@@ -143,6 +149,12 @@ private:
 
 	state m_state;
 
+#ifndef LINUX_NO_TRANSLATOR
+	/* Group address */
+	const in6_addr &id() const;
+	const in6_addr *m_addr;
+#endif
+
 	uint32_t m_flags;
 	mfa_group_source::action m_actions[mfa_group_source::event_count];
 
@@ -224,6 +236,12 @@ private:
 	socket0<us_mfa> m_rawsock;
 
 	data_plane_source_discovery m_sourcedisc;
+
+#ifndef LINUX_NO_TRANSLATOR
+	translator m_translator;
+	friend class translator;
+	friend class us_mfa_group_source;
+#endif
 
 #ifndef LINUX_NO_MMAP
 	void *m_mmaped;

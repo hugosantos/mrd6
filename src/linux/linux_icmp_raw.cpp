@@ -163,7 +163,11 @@ void linux_icmp_raw::data_available(uint32_t) {
 		return;
 	icmp6_hdr *icmphdr = (icmp6_hdr *)ptr;
 
+#ifndef LINUX_NO_TRANSLATOR
+	if (!has_mld_rta && icmphdr->icmp6_type != ICMP6_PACKET_TOO_BIG)
+#else
 	if (!has_mld_rta)
+#endif
 		return;
 
 	if (g_mrd->should_log(MESSAGE_SIG)) {
@@ -193,6 +197,9 @@ void linux_icmp_raw::data_available(uint32_t) {
 }
 
 void linux_icmp_raw::added_interface(interface *intf) {
+	if (intf->is_virtual())
+		return;
+
 	packet_mreq mreq;
 
 	memset(&mreq, 0, sizeof(mreq));
@@ -211,6 +218,9 @@ void linux_icmp_raw::added_interface(interface *intf) {
 }
 
 void linux_icmp_raw::removed_interface(interface *intf) {
+	if (intf->is_virtual())
+		return;
+
 	packet_mreq mreq;
 	memset(&mreq, 0, sizeof(mreq));
 

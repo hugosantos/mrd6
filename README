@@ -5,6 +5,8 @@ support, BSR and Embedded-RP), partial MBGP support (IPv6 multicast
 SAFI to populate the local mrib, when used in an edge), native and
 virtual interfaces (ipv6-ipv4, ipv6-ipv6 and tun/tap tunnels have
 all been tested extensively) as well as remote configuration (via CLI).
+Automatic translation of IPv4 multicast traffic to IPv6 is also
+supported (contributed by Teemu Kiviniemi).
 
 You may use mrd6 with any Linux 2.6 based system as no kernel support
 for ipv6 multicast forwarding is required, that feature is implemented

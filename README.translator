@@ -1,0 +1,149 @@
+IPv4 to IPv6 multicast translator
+---------------------------------
+
+   MRD6 contains an IPv4 to IPv6 multicast translator implementation.
+   
+   The implementation follows the architectural ideas and address
+   translation presented in draft-venaas-behave-mcast46
+   Internet-Draft. IPv4 to IPv6 protocol translation is done using an
+   adapted version of the SIIT algorithm (RFC 2765).
+   
+   The translator can be used as an MLD to IGMP proxy, or to make IPv4
+   groups available for a large IPv6 network using PIM-SM. The
+   translator performs only IPv4 to IPv6 translation. IPv6 to IPv4
+   translation is not supported. The translator supports both ASM
+   (any-source multicast) and SSM (source-specific multicast).
+
+   The translator is supported only on Linux.
+
+
+
+Address translation
+-------------------
+
+   An IPv4 source address is translated to an IPv6 address by
+   prepending the IPv4 address with the IPv6 unicast prefix configured
+   to the translator (unicast-prefix configuration option). In other
+   words, the original IPv4 source address is stored in the last 32
+   bits of the IPv6 address. The IPv6 unicast prefix must be routed
+   towards the translator on the IPv6 network.
+
+   In similar fashion, IPv4 ASM or SSM addresses are translated to
+   IPv6 ASM and SSM addresses, by prepending the original IPv4
+   addresses with the IPv6 ASM or SSM prefix configured to the
+   translator (asm-prefix and ssm-prefix configuration options).
+
+   The translator must be configured as the rendezvous point (RP) for
+   the IPv6 ASM prefix. A good way to accomplish this is to use an
+   Embedded-RP ASM prefix (RFC 3956).
+
+
+
+Joining and leaving IPv4 groups
+-------------------------------
+
+   The translator receives IPv6 multicast joins with the protocols
+   supported by MRD6 (MLDv2, PIM-SM). 
+
+   (*,G) joins:
+   If the the IPv6 group address matches the configured ASM prefix,
+   the translator joins the IPv4 ASM group embedded in the IPv6
+   address. The embedded IPv4 address must be also a valid IPv4 ASM
+   group address.
+
+   (S,G) joins:
+   If the IPv6 source address matches the configured unicast prefix,
+   and the IPv6 group address matches the SSM prefix, the translator
+   joins the IPv4 SSM channel embedded in the IPv6 addresses. The
+   embedded IPv4 group address must be also a valid IPv4 SSM group
+   address.
+
+   When the last IPv6 receiver leaves a translated group, the
+   translator leaves the original IPv4 group. The translator joins and
+   leaves IPv4 groups with IGMPv3 (RFC 3376) through the IPv4
+   interface configured to the translator (ipv4-interface
+   configuration option).
+
+
+
+Protocol translation
+--------------------
+
+   The implementation translates received IPv4 multicast packets to
+   IPv6 with a modified SIIT (RFC 2765) algorithm.
+
+   All transport layer protocols are translated. However, transport
+   layer checksums are updated only for UDP packets. Thus, other
+   transport layer protocols may be translated with invalid checksums.
+   
+   IPv4 fragments are translated to identical IPv6
+   fragments. Additionally, if the size of a translated packet exceeds
+   the currently known IPv6 path MTU, the translator handles
+   fragmentation on behalf of the IPv4 multicast senders.
+
+
+
+Example configuration
+---------------------
+
+   /* IPv4 to IPv6 multicast translator configuration. */ 
+   translator {
+      
+      /* IPv4 interface and address of the translator */
+      ipv4-interface = eth0;
+      ipv4-address = 192.0.2.75;
+      
+      /* Unicast prefix prepended to IPv4 source addresses.
+       * The prefix must be routed towards the translator on
+       * the IPv6 network. */
+      unicast-prefix = 2001:db8:ab:cd:ef::/96;
+      
+      /* Multicast prefix prepended to IPv4 ASM and SSM group addresses */
+      asm-prefix = ff7e:140:2001:db8:ab:cd::/96;
+      ssm-prefix = ff3e::/96;
+   }
+
+
+
+Useful mrd6sh commands
+----------------------
+
+   show translator
+
+      Displays the current state and configuration of the IPv4 to
+      IPv6 multicast translator module.
+
+   show group
+
+      Displays information about all translated groups.
+
+   show counters
+
+      Displays forwarding statistics.
+
+
+
+Author and contact information
+------------------------------
+
+   The multicast translator was implemented by Teemu Kiviniemi as part
+   of his master's thesis. The thesis describes the translator
+   implementation in detail.
+
+   The thesis is available at:
+      http://iki.fi/teemuki/translator/
+
+   E-mail:
+      Teemu Kiviniemi <firstname.lastname@iki.fi>
+
+
+
+Thanks to
+---------
+
+   Pekka Savola for comments and suggestions.
+
+   CSC - It Center for Science Ltd. and Funet for the possibility to
+   use a modern, high performance network for developing and testing
+   the multicast translator.
+

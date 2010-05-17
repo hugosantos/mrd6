@@ -63,3 +63,8 @@ $ mrd6sh show bgp
 Outputs current BGP neighbour state, including filter match
 statistics, current BGP state machine state, uptime, etc.
 
+$ mrd6sh show translator
+
+Displays the current state and configuration of the IPv4 to IPv6 multicast 
+translator module.
+

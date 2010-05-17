@@ -1,2 +1,3 @@
 boolean MMAP default on description "Enable Packet Socket MMAP support"
 boolean ICMPRAW default on description "Use PF_PACKET ICMP backend on Linux. Supports MLDv1"
+boolean TRANSLATOR default on description "Enable the IPv4 to IPv6 multicast translator"
