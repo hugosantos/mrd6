@@ -718,7 +718,15 @@ void us_mfa::handle_ipv6(int dev, uint8_t *buf, uint16_t len) {
 		IN6_IS_ADDR_LINKLOCAL(&hdr->ip6_src))
 		return;
 
-	if ((hdr->ip6_dst.s6_addr[1] & ~0x3) == 0)
+	/*
+	 * Silently drop packets with scope reserved, interface-local or link-local.
+
+	 * RFC 4291, Section 2.7.
+	 * Nodes must not originate a packet to a multicast address whose scope
+	 * field contains the reserved value 0; if such a packet is received, it
+	 * must be silently dropped.
+	 */
+	if ((hdr->ip6_dst.s6_addr[1] & 0xc) == 0)
 		return;
 
 	hdr->ip6_hlim--;
