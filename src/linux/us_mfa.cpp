@@ -729,6 +729,53 @@ void us_mfa::handle_ipv6(int dev, uint8_t *buf, uint16_t len) {
 	if ((hdr->ip6_dst.s6_addr[1] & 0xc) == 0)
 		return;
 
+	/* Do we have a Hop by Hop header? */
+	if (hdr->ip6_nxt == 0) {
+		int spaceLeft = (((const ip6_ext *)(hdr + 1))->ip6e_len + 1) * 8;
+
+		if (len < (sizeof(ip6_hdr) + spaceLeft))
+			return;
+
+		const uint8_t *ptr = buf + sizeof(ip6_hdr) + 2;
+
+		while (spaceLeft > 0) {
+			if (ptr[0] == 0) {
+				/* Pad1 */
+				spaceLeft--;
+			} else {
+				spaceLeft -= ptr[1] + 2;
+				if (spaceLeft < 0) {
+					/* Badly encoded HbH, discard packet */
+					return;
+				}
+
+				if (ptr[0] != 1) {
+					/* not PadN, check top-order 2 bits */
+
+					switch (ptr[0] >> 6) {
+					case 0:
+						// skip option
+						break;
+
+					case 1:
+						// discard packet
+						return;
+
+					case 2:
+					case 3:
+						// We handle 2 same as 3 as all of our destinations are
+						// multicast
+
+						// XXX send icmp parameter problem, code 2 to the source
+
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	/* Prepare the packet to be forwarded, decrementing the hop limit. */
 	hdr->ip6_hlim--;
 
 	us_mfa_group *grp = match_group(hdr->ip6_dst);
