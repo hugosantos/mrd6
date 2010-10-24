@@ -24,11 +24,11 @@
 
 #include <mrd/mrd.h>
 
-#include <mrdpriv/bsd/mfa.h>
+#include <mrdpriv/ks_mfa.h>
 #include <mrdpriv/bsd/rib.h>
 
 bool mrd::prepare_os_components() {
-	m_mfa = new bsd_mfa();
+	m_mfa = new ks_mfa();
 
 	return true;
 }
