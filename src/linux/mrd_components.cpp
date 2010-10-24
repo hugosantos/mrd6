@@ -24,6 +24,7 @@
 
 #include <mrd/mrd.h>
 
+#include <mrdpriv/ks_mfa.h>
 #include <mrdpriv/linux/unicast_route.h>
 #include <mrdpriv/linux/us_mfa.h>
 #include <mrdpriv/linux/icmp_raw.h>
@@ -32,8 +33,36 @@
 #include <execinfo.h>
 #endif
 
+static bool ks_mfa_available() {
+        int icmpsock = socket(PF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
+	if (icmpsock < 0) {
+		return false;
+	}
+
+	int vers = 1;
+
+	if (setsockopt(icmpsock, IPPROTO_IPV6, MRT6_INIT, &vers, sizeof(vers)) < 0) {
+		close(icmpsock);
+		return false;
+	} else {
+		setsockopt(icmpsock, IPPROTO_IPV6, MRT6_DONE, 0, 0);
+		close(icmpsock);
+		return true;
+	}
+}
+
 bool mrd::prepare_os_components() {
-	m_mfa = new us_mfa();
+	if (ks_mfa_available()) {
+		if (should_log(NORMAL))
+			log().writeline("Using kernel-space multicast forwarding");
+
+		m_mfa = new ks_mfa();
+	} else {
+		if (should_log(NORMAL))
+			log().writeline("Kernel-space multicast forwarding not available; falling back to user-space forwarding");
+
+		m_mfa = new us_mfa();
+	}
 
 	if (!instantiate_property_b("handle-proper-bridge", false))
 		return false;

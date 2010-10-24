@@ -1,6 +1,6 @@
 /*
  * Multicast Routing Daemon (MRD)
- *   bsd_mfa.cpp
+ *   ks_mfa.cpp
  *
  * Copyright (C) 2006, 2007 - Hugo Santos
  * Copyright (C) 2004..2006 - Universidade de Aveiro, IT Aveiro
@@ -29,7 +29,7 @@
 #include <mrd/interface.h>
 #include <mrd/mrd.h>
 #include <mrd/router.h>
-#include <mrdpriv/bsd/mfa.h>
+#include <mrdpriv/ks_mfa.h>
 #include <net/bpf.h>
 #include <net/if.h>
 #include <netinet/icmp6.h>
@@ -39,8 +39,12 @@
 #else
 #include <net/route.h>
 #endif
+#ifdef OS_LINUX
+#include <linux/mroute6.h>
+#else
 #include <netinet6/ip6_mroute.h>
 #include <netinet6/in6_var.h>
+#endif
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
@@ -54,7 +58,7 @@
 #include <net/ethernet.h>
 #endif
 
-bsd_mfa_group_source::bsd_mfa_group_source(bsd_mfa_group *grp, const in6_addr &addr,
+ks_mfa_group_source::ks_mfa_group_source(ks_mfa_group *grp, const in6_addr &addr,
 						uint32_t flags, action *acts)
 	: m_owner(grp), m_addr(addr) {
 
@@ -69,40 +73,40 @@ bsd_mfa_group_source::bsd_mfa_group_source(bsd_mfa_group *grp, const in6_addr &a
 
 	m_iif = 0;
 
-	memset(&m_bsd_state, 0, sizeof(m_bsd_state));
+	memset(&m_ks_state, 0, sizeof(m_ks_state));
 
-	m_bsd_state.mf6cc_origin = m_addr.as_sockaddr();
-	m_bsd_state.mf6cc_mcastgrp = m_owner->addr().as_sockaddr();
+	m_ks_state.mf6cc_origin = m_addr.as_sockaddr();
+	m_ks_state.mf6cc_mcastgrp = m_owner->addr().as_sockaddr();
 }
 
-bsd_mfa_group_source::~bsd_mfa_group_source() {
-	((bsd_mfa *)g_mrd->mfa())->commit(&m_bsd_state, true);
+ks_mfa_group_source::~ks_mfa_group_source() {
+	((ks_mfa *)g_mrd->mfa())->commit(&m_ks_state, true);
 }
 
-void bsd_mfa_group_source::get_input_counter(uint64_t &val) const {
-	((bsd_mfa *)g_mrd->mfa())->get_input_counter(this, val);
+void ks_mfa_group_source::get_input_counter(uint64_t &val) const {
+	((ks_mfa *)g_mrd->mfa())->get_input_counter(this, val);
 }
 
-void bsd_mfa_group_source::get_forwarding_counter(uint64_t &val) const {
-	((bsd_mfa *)g_mrd->mfa())->get_forwarding_counter(this, val);
+void ks_mfa_group_source::get_forwarding_counter(uint64_t &val) const {
+	((ks_mfa *)g_mrd->mfa())->get_forwarding_counter(this, val);
 }
 
-void bsd_mfa_group_source::set_iif(interface *iif) {
+void ks_mfa_group_source::set_iif(interface *iif) {
 	m_iif = iif;
 
-	m_bsd_state.mf6cc_parent = iif ? ((bsd_mfa *)g_mrd->mfa())->vif(iif) : 0;
+	m_ks_state.mf6cc_parent = iif ? ((ks_mfa *)g_mrd->mfa())->vif(iif) : 0;
 
-	((bsd_mfa *)g_mrd->mfa())->commit(&m_bsd_state);
+	((ks_mfa *)g_mrd->mfa())->commit(&m_ks_state);
 }
 
-void bsd_mfa_group_source::release_iif(interface *iif) {
+void ks_mfa_group_source::release_iif(interface *iif) {
 	if (m_iif == iif) {
 		set_iif(0);
 	}
 }
 
-void bsd_mfa_group_source::add_oif(interface *oif) {
-	int vif = ((bsd_mfa *)g_mrd->mfa())->vif(oif);
+void ks_mfa_group_source::add_oif(interface *oif) {
+	int vif = ((ks_mfa *)g_mrd->mfa())->vif(oif);
 
 	if (vif < 0)
 		return;
@@ -111,21 +115,21 @@ void bsd_mfa_group_source::add_oif(interface *oif) {
 		m_oifs.push_back(oif);
 	}
 
-	IF_SET(vif, &m_bsd_state.mf6cc_ifset);
+	IF_SET(vif, &m_ks_state.mf6cc_ifset);
 
-	((bsd_mfa *)g_mrd->mfa())->commit(&m_bsd_state);
+	((ks_mfa *)g_mrd->mfa())->commit(&m_ks_state);
 }
 
-void bsd_mfa_group_source::release_oif(interface *oif) {
+void ks_mfa_group_source::release_oif(interface *oif) {
 	for (oifs::iterator k = m_oifs.begin(); k != m_oifs.end(); ++k) {
 		if (*k == oif) {
 			m_oifs.erase(k);
 
-			int vif = ((bsd_mfa *)g_mrd->mfa())->vif(oif);
+			int vif = ((ks_mfa *)g_mrd->mfa())->vif(oif);
 
 			if (vif >= 0) {
-				IF_CLR(vif, &m_bsd_state.mf6cc_ifset);
-				((bsd_mfa *)g_mrd->mfa())->commit(&m_bsd_state);
+				IF_CLR(vif, &m_ks_state.mf6cc_ifset);
+				((ks_mfa *)g_mrd->mfa())->commit(&m_ks_state);
 			}
 
 			return;
@@ -133,7 +137,7 @@ void bsd_mfa_group_source::release_oif(interface *oif) {
 	}
 }
 
-void bsd_mfa_group_source::change_flags(uint32_t flags, action act) {
+void ks_mfa_group_source::change_flags(uint32_t flags, action act) {
 	if (act == no_action) {
 		m_interest_flags &= ~flags;
 	} else {
@@ -152,18 +156,18 @@ static void output(base_stream &out, const std::vector<interface *> &ifs) {
 	out.write("}");
 }
 
-void bsd_mfa_group_source::output_info(base_stream &out) const {
+void ks_mfa_group_source::output_info(base_stream &out) const {
 	out.xprintf("Iif: %s\n", m_iif ? m_iif->name() : "(None)");
 	base_stream &oso = out.write("Oifs: ");
 	output(oso, m_oifs);
 	oso.newl();
 }
 
-bsd_mfa_group::bsd_mfa_group(router *owner, const inet6_addr &id)
+ks_mfa_group::ks_mfa_group(router *owner, const inet6_addr &id)
 	: mfa_group(owner), m_addr(id) {
 	instowner = 0;
 
-	bsd_mfa *m = (bsd_mfa *)g_mrd->mfa();
+	ks_mfa *m = (ks_mfa *)g_mrd->mfa();
 
 	m_flags = m->m_grpflags;
 	for (int i = 0; i < mfa_group_source::event_count; i++)
@@ -172,7 +176,7 @@ bsd_mfa_group::bsd_mfa_group(router *owner, const inet6_addr &id)
 	m_state = pending;
 }
 
-void bsd_mfa_group::activate(bool accept) {
+void ks_mfa_group::activate(bool accept) {
 	if (accept && m_state == running)
 		return;
 
@@ -183,20 +187,20 @@ void bsd_mfa_group::activate(bool accept) {
 	}
 
 	if (!accept) {
-		((bsd_mfa *)g_mrd->mfa())->release_group(this);
+		((ks_mfa *)g_mrd->mfa())->release_group(this);
 	}
 }
 
-mfa_group_source *bsd_mfa_group::create_source_state(const in6_addr &addr, void *instowner) {
+mfa_group_source *ks_mfa_group::create_source_state(const in6_addr &addr, void *instowner) {
 	mfa_group_source *src = get_source_state(addr);
 
 	if (!src) {
-		src = new bsd_mfa_group_source(this, addr, m_flags, m_actions);
+		src = new ks_mfa_group_source(this, addr, m_flags, m_actions);
 		if (src) {
 			if (mfa_core::mfa()->should_log(DEBUG))
 				mfa_core::mfa()->log().xprintf(
-					"BSD-MFA: created source state for %{addr}\n", addr);
-			m_sources[addr] = (bsd_mfa_group_source *)src;
+					"MFA: created source state for %{addr}\n", addr);
+			m_sources[addr] = (ks_mfa_group_source *)src;
 		}
 	}
 
@@ -206,12 +210,12 @@ mfa_group_source *bsd_mfa_group::create_source_state(const in6_addr &addr, void 
 	return src;
 }
 
-mfa_group_source *bsd_mfa_group::get_source_state(const in6_addr &addr) const {
+mfa_group_source *ks_mfa_group::get_source_state(const in6_addr &addr) const {
 	return match_source(addr);
 }
 
-void bsd_mfa_group::release_source_state(mfa_group_source *_src) {
-	bsd_mfa_group_source *src = (bsd_mfa_group_source *)_src;
+void ks_mfa_group::release_source_state(mfa_group_source *_src) {
+	ks_mfa_group_source *src = (ks_mfa_group_source *)_src;
 
 	for (sources::iterator i = m_sources.begin();
 					i != m_sources.end(); ++i) {
@@ -224,7 +228,7 @@ void bsd_mfa_group::release_source_state(mfa_group_source *_src) {
 	}
 }
 
-void bsd_mfa_group::change_default_flags(uint32_t flags,
+void ks_mfa_group::change_default_flags(uint32_t flags,
 					mfa_group_source::action act) {
 	for (int i = mfa_group_source::any_incoming;
 			i < mfa_group_source::event_count; i++) {
@@ -233,7 +237,7 @@ void bsd_mfa_group::change_default_flags(uint32_t flags,
 	}
 }
 
-void bsd_mfa_group::output_info(base_stream &out) const {
+void ks_mfa_group::output_info(base_stream &out) const {
 	for (sources::const_iterator i = m_sources.begin();
 					i != m_sources.end(); ++i) {
 		out.writeline(i->first);
@@ -243,7 +247,7 @@ void bsd_mfa_group::output_info(base_stream &out) const {
 	}
 }
 
-void bsd_mfa::change_group_default_flags(uint32_t flags,
+void ks_mfa::change_group_default_flags(uint32_t flags,
 					mfa_group_source::action act) {
 	for (int i = mfa_group_source::any_incoming;
 			i < mfa_group_source::event_count; i++) {
@@ -252,16 +256,16 @@ void bsd_mfa::change_group_default_flags(uint32_t flags,
 	}
 }
 
-mfa_group *bsd_mfa::create_group(router *r, const inet6_addr &id, void *instowner) {
+mfa_group *ks_mfa::create_group(router *r, const inet6_addr &id, void *instowner) {
 	mfa_group *grp = get_group(id);
 
 	if (!grp) {
-		grp = new bsd_mfa_group(r, id);
+		grp = new ks_mfa_group(r, id);
 		if (grp) {
 			if (mfa_core::mfa()->should_log(DEBUG))
 				mfa_core::mfa()->log().xprintf(
-					"BSD-MFA: created group state for %{Addr}\n", id);
-			m_groups[id] = (bsd_mfa_group *)grp;
+					"MFA: created group state for %{Addr}\n", id);
+			m_groups[id] = (ks_mfa_group *)grp;
 		}
 	}
 
@@ -271,7 +275,7 @@ mfa_group *bsd_mfa::create_group(router *r, const inet6_addr &id, void *instowne
 	return grp;
 }
 
-mfa_group *bsd_mfa::get_group(const inet6_addr &id) const {
+mfa_group *ks_mfa::get_group(const inet6_addr &id) const {
 	groups::const_iterator k = m_groups.find(id);
 
 	if (k == m_groups.end())
@@ -280,7 +284,7 @@ mfa_group *bsd_mfa::get_group(const inet6_addr &id) const {
 	return k->second;
 }
 
-void bsd_mfa::release_group(mfa_group *grp) {
+void ks_mfa::release_group(mfa_group *grp) {
 	for (groups::iterator i = m_groups.begin(); i != m_groups.end(); ++i) {
 		if (grp == i->second) {
 			delete i->second;
@@ -292,15 +296,15 @@ void bsd_mfa::release_group(mfa_group *grp) {
 	}
 }
 
-bsd_mfa::bsd_mfa()
-	: m_sock("kernel sock", this, std::mem_fun(&bsd_mfa::kernel_data_pending)) {
+ks_mfa::ks_mfa()
+	: m_sock("kernel sock", this, std::mem_fun(&ks_mfa::kernel_data_pending)) {
 	m_icmpsock = -1;
 	m_grpflags = 0;
 	for (int i = 0; i < mfa_group_source::event_count; i++)
 		m_grpactions[i] = mfa_group_source::no_action;
 }
 
-bool bsd_mfa::pre_startup() {
+bool ks_mfa::pre_startup() {
 	if (!mfa_core::pre_startup())
 		return false;
 
@@ -318,12 +322,12 @@ bool bsd_mfa::pre_startup() {
 
 	if (setsockopt(m_icmpsock, IPPROTO_IPV6, MRT6_INIT, &vers, sizeof(vers)) < 0) {
 		if (should_log(WARNING))
-			log().perror("(BSD-MFA) MRT6_INIT Failed");
+			log().perror("(MFA) MRT6_INIT Failed");
 	}
 
 #if 0
 	if (setsockopt(m_icmpsock, IPPROTO_IPV6, MRT6_PIM, &vers, sizeof(vers)) < 0) {
-		g_mrd->log().info(DEBUG) << "BSD-MFA: MRD6_PIM Failed: " << strerror(errno) << endl;
+		g_mrd->log().info(DEBUG) << "MFA: MRD6_PIM Failed: " << strerror(errno) << endl;
 	}
 #endif
 
@@ -333,11 +337,11 @@ bool bsd_mfa::pre_startup() {
 						&data_plane_sourcedisc);
 }
 
-bool bsd_mfa::check_startup() {
+bool ks_mfa::check_startup() {
 	return true;
 }
 
-void bsd_mfa::shutdown() {
+void ks_mfa::shutdown() {
 	setsockopt(m_icmpsock, IPPROTO_IPV6, MRT6_DONE, 0, 0);
 
 	if (m_icmpsock > 0) {
@@ -347,12 +351,12 @@ void bsd_mfa::shutdown() {
 	g_mrd->register_source_discovery("data-plane", 0);
 }
 
-void bsd_mfa::forward(interface *intf, ip6_hdr *hdr, uint16_t len) const {
+void ks_mfa::forward(interface *intf, ip6_hdr *hdr, uint16_t len) const {
 	if (should_log(WARNING))
-		log().writeline("(BSD-MFA) Failed to dispatch, not supported.");
+		log().writeline("(MFA) Failed to dispatch, not supported.");
 }
 
-bool bsd_mfa::output_info(base_stream &out, const std::vector<std::string> &args) const {
+bool ks_mfa::output_info(base_stream &out, const std::vector<std::string> &args) const {
 	for (groups::const_iterator i = m_groups.begin();
 				i != m_groups.end(); ++i) {
 		out.writeline(i->first);
@@ -364,7 +368,7 @@ bool bsd_mfa::output_info(base_stream &out, const std::vector<std::string> &args
 	return true;
 }
 
-void bsd_mfa::added_interface(interface *intf) {
+void ks_mfa::added_interface(interface *intf) {
 	for (int vif = 1; vif < MAXMIFS; vif++) {
 		if (rev_vifs.find(vif) == rev_vifs.end()) {
 			mif6ctl mc;
@@ -374,13 +378,13 @@ void bsd_mfa::added_interface(interface *intf) {
 
 			if (setsockopt(m_icmpsock, IPPROTO_IPV6, MRT6_ADD_MIF, &mc, sizeof(mc)) < 0) {
 				if (should_log(WARNING))
-					log().perror("(BSD-MFA) Failed to MRT6_ADD_MIF");
+					log().perror("(MFA) Failed to MRT6_ADD_MIF");
 			} else {
 				vifs[intf] = vif;
 				rev_vifs[vif] = intf;
 
 				if (should_log(DEBUG))
-					log().xprintf("(BSD-MFA) Added interface %s with vif %i\n",
+					log().xprintf("(MFA) Added interface %s with vif %i\n",
 						      intf->name(), vif);
 			}
 
@@ -389,14 +393,14 @@ void bsd_mfa::added_interface(interface *intf) {
 	}
 
 	if (should_log(WARNING))
-		log().xprintf("(BSD-MFA) Failed to enable multicast "
+		log().xprintf("(MFA) Failed to enable multicast "
 			      "forwarding in %s, no available MIFs\n",
 			      intf->name());
 }
 
-void bsd_mfa::removed_interface(interface *intf) {
+void ks_mfa::removed_interface(interface *intf) {
 	if (should_log(DEBUG))
-		log().xprintf("(BSD-MFA) Removed interface %s.\n", intf->name());
+		log().xprintf("(MFA) Removed interface %s.\n", intf->name());
 
 	std::map<interface *, int>::iterator i = vifs.find(intf);
 	if (i != vifs.end()) {
@@ -410,19 +414,19 @@ void bsd_mfa::removed_interface(interface *intf) {
 	}
 }
 
-int bsd_mfa::vif(interface *iif) const {
+int ks_mfa::vif(interface *iif) const {
 	std::map<interface *, int>::const_iterator i = vifs.find(iif);
 	if (i != vifs.end())
 		return i->second;
 	return -1;
 }
 
-void bsd_mfa::commit(mf6cctl *msg, bool remove) {
+void ks_mfa::commit(mf6cctl *msg, bool remove) {
 	if (IN6_IS_ADDR_UNSPECIFIED(&msg->mf6cc_origin.sin6_addr))
 		return;
 
 	if (should_log(EXTRADEBUG)) {
-		log().xprintf("(BSD-MFA) Commited MFC with src: %{addr} dst: %{addr}\n",
+		log().xprintf("(MFA) Commited MFC with src: %{addr} dst: %{addr}\n",
 			      msg->mf6cc_origin.sin6_addr, msg->mf6cc_mcastgrp.sin6_addr);
 	}
 
@@ -436,7 +440,7 @@ void bsd_mfa::commit(mf6cctl *msg, bool remove) {
 
 static uint8_t buf[2048];
 
-void bsd_mfa::kernel_data_pending(uint32_t) {
+void ks_mfa::kernel_data_pending(uint32_t) {
 	sockaddr_in6 from;
 	socklen_t slen = sizeof(from);
 
@@ -457,13 +461,13 @@ void bsd_mfa::kernel_data_pending(uint32_t) {
 
 #if 1
 				if (should_log(DEBUG))
-					log().xprintf("(BSD-MFA) Cache miss mif %s src %{addr} dst %{addr}\n",
+					log().xprintf("(MFA) Cache miss mif %s src %{addr} dst %{addr}\n",
 						      i->second->name(), msg->im6_src, msg->im6_dst);
 #endif
 
 				discovered_source(i->second->index(), msg->im6_dst, msg->im6_src);
 			} else if (msg->im6_msgtype == MRT6MSG_WRONGMIF) {
-				bsd_mfa_group *grp = (bsd_mfa_group *)get_group(msg->im6_dst);
+				ks_mfa_group *grp = (ks_mfa_group *)get_group(msg->im6_dst);
 				if (grp) {
 					grp->owner()->mfa_notify(
 							grp->get_source_state(msg->im6_src),
@@ -479,12 +483,12 @@ void bsd_mfa::kernel_data_pending(uint32_t) {
 	}
 }
 
-void bsd_mfa::discovered_source(int ifindex, const inet6_addr &grp,
+void ks_mfa::discovered_source(int ifindex, const inet6_addr &grp,
 				const inet6_addr &src) {
 	data_plane_sourcedisc.discovered_source(ifindex, grp, src);
 }
 
-void bsd_mfa::get_source_counters(const bsd_mfa_group_source *src, sioc_sg_req6 *r) {
+void ks_mfa::get_source_counters(const ks_mfa_group_source *src, sioc_sg_req6 *r) {
 	r->src = src->m_addr.as_sockaddr();
 	r->grp = src->m_owner->addr().as_sockaddr();
 
@@ -495,7 +499,7 @@ void bsd_mfa::get_source_counters(const bsd_mfa_group_source *src, sioc_sg_req6 
 	}
 }
 
-void bsd_mfa::get_input_counter(const bsd_mfa_group_source *src, uint64_t &val) {
+void ks_mfa::get_input_counter(const ks_mfa_group_source *src, uint64_t &val) {
 	sioc_sg_req6 r;
 
 	get_source_counters(src, &r);
@@ -503,7 +507,7 @@ void bsd_mfa::get_input_counter(const bsd_mfa_group_source *src, uint64_t &val) 
 	val = r.bytecnt;
 }
 
-void bsd_mfa::get_forwarding_counter(const bsd_mfa_group_source *src, uint64_t &val) {
+void ks_mfa::get_forwarding_counter(const ks_mfa_group_source *src, uint64_t &val) {
 	sioc_sg_req6 r;
 
 	get_source_counters(src, &r);

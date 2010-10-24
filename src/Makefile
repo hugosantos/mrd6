@@ -47,7 +47,7 @@ INCLUDES = -I../include
 NOW = $(shell date -u)
 
 SOURCES = address.cpp address_set.cpp group.cpp icmp_inet6.cpp icmp.cpp \
-	  interface.cpp log.cpp mfa.cpp mrd.cpp mrib.cpp node.cpp \
+	  interface.cpp ks_mfa.cpp log.cpp mfa.cpp mrd.cpp mrib.cpp node.cpp \
 	  parser.cpp rib.cpp router.cpp timers.cpp support/objpool.cpp \
 	  support/ptree.cpp
 
@@ -60,7 +60,7 @@ ifeq ($(PLATFORM),OS_LINUX)
 endif
 
 ifeq ($(PLATFORM),OS_BSD)
-	SOURCES += bsd/bsd_rib.cpp bsd/bsd_mfa.cpp bsd/mrd_components.cpp
+	SOURCES += bsd/bsd_rib.cpp bsd/mrd_components.cpp
 endif
 
 MLD_SOURCES = mld/mld_def.cpp mld/mld_router.cpp mld/mld_conf.cpp mld/mld_module.cpp
