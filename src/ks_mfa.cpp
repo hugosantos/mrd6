@@ -30,7 +30,6 @@
 #include <mrd/mrd.h>
 #include <mrd/router.h>
 #include <mrdpriv/ks_mfa.h>
-#include <net/bpf.h>
 #include <net/if.h>
 #include <netinet/icmp6.h>
 #include <netinet/ip6.h>
