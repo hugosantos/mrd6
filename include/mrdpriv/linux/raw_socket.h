@@ -1,6 +1,6 @@
 /*
  * Multicast Routing Daemon (MRD)
- *   mrdpriv/linux/icmp_raw.h
+ *   mrdpriv/linux/raw_socket.h
  *
  * Copyright (C) 2010 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2006, 2007 - Hugo Santos
@@ -20,39 +20,47 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Author:  Hugo Santos <hugo@fivebits.net>
+ * Author:  Teemu Kiviniemi <firstname.lastname@iki.fi>
  */
 
-#ifndef _mrd_linux_icmp_raw_h_
-#define _mrd_linux_icmp_raw_h_
+#ifndef _mrd_linux_raw_socket_h_
+#define _mrd_linux_raw_socket_h_
 
 #include <mrd/mrd.h>
-#include <mrdpriv/icmp_inet6.h>
-#include <mrdpriv/linux/raw_socket.h>
 
-class linux_icmp_raw : public icmp_inet6 {
+template<class Holder>
+class linux_raw_socket : public socket_base {
 public:
-	linux_icmp_raw();
+	linux_raw_socket(const char *name, Holder *holder);
 
-	bool check_startup();
-	void shutdown();
+	void callback(uint32_t);
 
-	void added_interface(interface *);
-	void removed_interface(interface *);
-
-	typedef linux_raw_socket<linux_icmp_raw> raw_socket;
-
-	void data_available(raw_socket *);
-
-	void registration_changed();
-	void internal_require_mgroup(const in6_addr &, bool);
-
+#ifndef LINUX_NO_MMAP
+	void *m_mmapped;
+	uint32_t m_framesize;
+	uint32_t m_mmappedlen;
+	uint8_t *m_mmapbuf;
+#endif
  private:
-	int create_socket(interface *);
-
-	typedef std::map<int, raw_socket *> ifid_socket_map;
-	ifid_socket_map m_ifid_socket;
+	Holder *m_holder;
 };
 
+template<class Holder>
+linux_raw_socket<Holder>::linux_raw_socket(const char *name, Holder *holder)
+	: socket_base(name),
+#ifndef LINUX_NO_MMAP
+		    m_mmapped(NULL),
+		    m_framesize(2048),
+		    m_mmappedlen(1024*1024),
+		    m_mmapbuf(NULL),
 #endif
+		    m_holder(holder) {
+}
 
+template<class Holder>
+void linux_raw_socket<Holder>::callback(uint32_t) {
+	m_holder->data_available(this);
+}
+
+
+#endif

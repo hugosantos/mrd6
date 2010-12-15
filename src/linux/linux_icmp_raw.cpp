@@ -2,8 +2,8 @@
  * Multicast Routing Daemon (MRD)
  *   linux/linux_icmp_raw.cpp
  *
+ * Copyright (C) 2009, 2010 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2009 - Teemu Kiviniemi
- * Copyright (C) 2009 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2006, 2007 - Hugo Santos
  * Copyright (C) 2004..2006 - Universidade de Aveiro, IT Aveiro
  *
@@ -60,9 +60,7 @@ struct _ip6_ext {
 	uint8_t ip6e_len;
 };
 
-linux_icmp_raw::linux_icmp_raw()
-	: m_rawicmpsock("icmpv6 (raw)", this,
-			std::mem_fun(&linux_icmp_raw::data_available)) {
+linux_icmp_raw::linux_icmp_raw() {
 }
 
 static uint8_t ibuffer[8192];
@@ -76,32 +74,25 @@ bool linux_icmp_raw::check_startup() {
 	::shutdown(m_icmpsock.fd(), SHUT_RD);
 	m_icmpsock.unregister(false);
 
-	/* Linux bridges consume the packets before they reach the
-	 * protocol handlers leaving us without signaling */
-	bool bridges = g_mrd->get_property_bool("handle-proper-bridge");
-
-	int sock = socket(PF_PACKET, SOCK_DGRAM,
-			  htons(bridges ? ETH_P_ALL : ETH_P_IPV6));
-
-	if (sock < 0)
-		return false;
-
-	m_rawicmpsock.register_fd(sock);
-
 	return true;
 }
 
 void linux_icmp_raw::shutdown() {
-	m_rawicmpsock.unregister();
+	for (ifid_socket_map::iterator i = m_ifid_socket.begin(); i != m_ifid_socket.end(); i++) {
+		raw_socket *sock = i->second;
+		m_ifid_socket.erase(i);
+		sock->unregister();
+		delete sock;
+	}
 
 	icmp_inet6::shutdown();
 }
 
-void linux_icmp_raw::data_available(uint32_t) {
+void linux_icmp_raw::data_available(raw_socket *sock) {
 	sockaddr_ll sa;
 	socklen_t salen = sizeof(sa);
 
-	const int recvlen = recvfrom(m_rawicmpsock.fd(), ibuffer, sizeof(ibuffer),
+	const int recvlen = recvfrom(sock->fd(), ibuffer, sizeof(ibuffer),
 			       0, (sockaddr *)&sa, &salen);
 
 	if (recvlen < 0 || sa.sll_protocol != htons(ETH_P_IPV6))
@@ -196,18 +187,53 @@ void linux_icmp_raw::data_available(uint32_t) {
 	}
 }
 
+int linux_icmp_raw::create_socket(interface *intf) {
+
+	/* Linux bridges consume the packets before they reach the
+	 * protocol handlers leaving us without signaling */
+	bool bridges = g_mrd->get_property_bool("handle-proper-bridge");
+
+	const unsigned short int protocol = htons(bridges ? ETH_P_ALL : ETH_P_IPV6);
+
+	int sock = socket(PF_PACKET, SOCK_DGRAM, protocol);
+
+	if (sock < 0)
+		return -1;
+
+	/* Bind the socket */
+	sockaddr_ll sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sll_family = AF_PACKET;
+	sa.sll_protocol = protocol;
+	sa.sll_ifindex = intf->index();
+	if (bind(sock, (sockaddr *) &sa, sizeof(sa)) < 0) {
+		const int e = errno;
+		close(sock);
+		errno = e;
+		return -1;
+	}
+
+	/* Add multicast membership */
+	packet_mreq mreq;
+	memset(&mreq, 0, sizeof(mreq));
+	mreq.mr_ifindex = intf->index();
+	mreq.mr_type = PACKET_MR_ALLMULTI;
+	if (setsockopt(sock, SOL_PACKET, PACKET_ADD_MEMBERSHIP,
+		       &mreq, sizeof(mreq)) < 0) {
+		const int e = errno;
+		close(sock);
+		errno = e;
+		return -1;
+	}
+	return sock;
+}
+
 void linux_icmp_raw::added_interface(interface *intf) {
 	if (intf->is_virtual())
 		return;
 
-	packet_mreq mreq;
-
-	memset(&mreq, 0, sizeof(mreq));
-	mreq.mr_ifindex = intf->index();
-	mreq.mr_type = PACKET_MR_ALLMULTI;
-
-	if (setsockopt(m_rawicmpsock.fd(), SOL_PACKET, PACKET_ADD_MEMBERSHIP,
-				&mreq, sizeof(mreq)) < 0) {
+	int fd = create_socket(intf);
+	if (fd < 0) {
 		if (g_mrd->should_log(VERBOSE)) {
 			g_mrd->log().xprintf("[ICMPv6] Will not be able to"
 				     " listen to ICMPv6 messages in %s (%i),"
@@ -215,20 +241,40 @@ void linux_icmp_raw::added_interface(interface *intf) {
 				     intf->index(), strerror(errno));
 		}
 	}
+
+	std::string name("icmpv6 (raw) [");
+	name.append(intf->name());
+	name.append("]");
+	raw_socket *sock = new raw_socket(name.c_str(), this);
+	sock->register_fd(fd);
+	m_ifid_socket[intf->index()] = sock;
+	
+	if (g_mrd->should_log(DEBUG)) {
+		g_mrd->log().xprintf("[ICMPv6] listening on interface %s (%i)\n",
+				     intf->name(), intf->index());
+	}
+
+
 }
 
 void linux_icmp_raw::removed_interface(interface *intf) {
 	if (intf->is_virtual())
 		return;
 
-	packet_mreq mreq;
-	memset(&mreq, 0, sizeof(mreq));
+	ifid_socket_map::iterator i = m_ifid_socket.find(intf->index());
+	if (i == m_ifid_socket.end())
+		return;
 
-	mreq.mr_ifindex = intf->index();
-	mreq.mr_type = PACKET_MR_ALLMULTI;
+	raw_socket *sock = i->second;
+	m_ifid_socket.erase(i);
 
-	setsockopt(m_rawicmpsock.fd(), SOL_PACKET, PACKET_DROP_MEMBERSHIP,
-			&mreq, sizeof(mreq));
+	sock->unregister();
+	delete sock;
+
+	if (g_mrd->should_log(DEBUG)) {
+		g_mrd->log().xprintf("[ICMPv6] Stopped listening on interface %s (%i)\n",
+				     intf->name(), intf->index());
+	}
 }
 
 void linux_icmp_raw::registration_changed() {

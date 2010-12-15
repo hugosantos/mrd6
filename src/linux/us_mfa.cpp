@@ -2,8 +2,8 @@
  * Multicast Routing Daemon (MRD)
  *   us_mfa.cpp
  *
+ * Copyright (C) 2009, 2010 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2009 - Teemu Kiviniemi
- * Copyright (C) 2009 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2006, 2007 - Hugo Santos
  * Copyright (C) 2004..2006 - Universidade de Aveiro, IT Aveiro
  *
@@ -517,18 +517,12 @@ void us_mfa::invalidate_group_cache(const in6_addr &addr) {
 }
 
 us_mfa::us_mfa()
-	: m_rawsock("us-mfa sock", this,
-		    std::mem_fun(&us_mfa::data_available)),
+	: 
 #ifndef LINUX_NO_TRANSLATOR
 	  m_translator(this),
 #endif
 	  m_stat_timer("mfa stat update timer", this,
 		       std::mem_fun(&us_mfa::update_stats), 2000, true) {
-#ifndef LINUX_NO_MMAP
-	m_mmaped = 0;
-	m_framesize = 2048;
-	m_mmapedlen = 1024 * 1024;
-#endif
 
 	m_grpflags = 0;
 	for (int i = 0; i < mfa_group_source::event_count; i++)
@@ -552,11 +546,13 @@ bool us_mfa::pre_startup() {
 	return g_mrd->register_source_discovery("data-plane", &m_sourcedisc);
 }
 
-bool us_mfa::check_startup() {
+int us_mfa::create_socket(raw_socket *sock, interface *intf) {
 	bool bridges = g_mrd->get_property_bool("handle-proper-bridge");
 
-	int sock = socket(PF_PACKET, SOCK_DGRAM, htons(bridges ? ETH_P_ALL : ETH_P_IPV6));
-	if (sock < 0) {
+	const unsigned short int protocol = htons(bridges ? ETH_P_ALL : ETH_P_IPV6);
+
+	int fd = socket(PF_PACKET, SOCK_DGRAM, protocol);
+	if (fd < 0) {
 		should_log(FATAL);
 
 		if (errno == EPERM) {
@@ -564,86 +560,114 @@ bool us_mfa::check_startup() {
 		} else {
 			log().perror("Failed to create packet socket");
 		}
-		return false;
+		return -1;
 	}
-
-#ifndef LINUX_NO_TRANSLATOR
-	if (!m_translator.check_startup())
-		return false;
-#endif
 
 #ifndef LINUX_NO_MMAP
 	if (g_mrd->has_property("mfa-framesize")) {
-		m_framesize = atoi(g_mrd->get_property_string("mfa-framesize"));
-		if (m_framesize < 2048)
-			m_framesize = 2048;
+		sock->m_framesize = atoi(g_mrd->get_property_string("mfa-framesize"));
+		if (sock->m_framesize < 2048)
+			sock->m_framesize = 2048;
 	}
 
 	uint32_t block_max_size = 256 * 1024;
 
 	if (g_mrd->has_property("mfa-mmap-size")) {
-		m_mmapedlen = atoi(g_mrd->get_property_string("mfa-mmap-size"));
-		m_mmapedlen &= ~(0x1000-1);
-		if (m_mmapedlen < block_max_size)
-			m_mmapedlen = block_max_size;
+		sock->m_mmappedlen = atoi(g_mrd->get_property_string("mfa-mmap-size"));
+		sock->m_mmappedlen &= ~(0x1000-1);
+		if (sock->m_mmappedlen < block_max_size)
+			sock->m_mmappedlen = block_max_size;
 	}
 
 	tpacket_req req;
 
-	req.tp_frame_size = m_framesize;
+	req.tp_frame_size = sock->m_framesize;
 
 	req.tp_block_size = block_max_size;
-	req.tp_block_nr = m_mmapedlen / block_max_size;
-	req.tp_frame_nr = m_mmapedlen / req.tp_frame_size;
+	req.tp_block_nr = sock->m_mmappedlen / block_max_size;
+	req.tp_frame_nr = sock->m_mmappedlen / req.tp_frame_size;
 
-	m_mmapedlen = req.tp_block_nr * block_max_size;
+	sock->m_mmappedlen = req.tp_block_nr * block_max_size;
 
-	if (setsockopt(sock, SOL_PACKET, PACKET_RX_RING,
+	if (setsockopt(fd, SOL_PACKET, PACKET_RX_RING,
 				(void *)&req, sizeof(req)) == 0) {
-		if ((m_mmaped = mmap(0, m_mmapedlen,
+		if ((sock->m_mmapped = mmap(0, sock->m_mmappedlen,
 					PROT_READ|PROT_WRITE, MAP_SHARED,
-					sock, 0)) == MAP_FAILED) {
-			m_mmaped = 0;
+					fd, 0)) == MAP_FAILED) {
+			sock->m_mmapped = 0;
 		} else {
-			m_mmapbuf = (uint8_t *)m_mmaped;
+			sock->m_mmapbuf = (uint8_t *)sock->m_mmapped;
 		}
 	}
 
-	if (!m_mmaped && should_log(WARNING)) {
+	if (!sock->m_mmapped && should_log(WARNING)) {
 		log().perror("Failed to memory map packet socket, continuing with socket interface");
 	}
 #endif
 
-	if (fcntl(sock, F_SETFL, O_NONBLOCK) < 0) {
+	if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0) {
 		should_log(FATAL);
 		log().writeline("Failed to change working socket to non-blocking mode.");
-		return false;
+		return -1;
 	}
 
 	int val = 256 * 1024;
 
-	setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &val, sizeof(val));
+	setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &val, sizeof(val));
 
-	m_rawsock.register_fd(sock);
+	if (intf) {
+		/* Bind the socket */
+		sockaddr_ll sa;
+		memset(&sa, 0, sizeof(sa));
+		sa.sll_family = AF_PACKET;
+		sa.sll_protocol = protocol;
+		sa.sll_ifindex = intf->index();
+		if (bind(fd, (sockaddr *) &sa, sizeof(sa)) < 0) {
+			if (should_log(WARNING)) {
+				log().perror("Failed to bind socket to interface");
+			}
+			return -1;
+		}
+	}
+
+	return fd;
+}
+
+bool us_mfa::check_startup() {
+
+#ifndef LINUX_NO_TRANSLATOR
+	if (!m_translator.check_startup())
+		return -1;
+#endif
 
 	m_stat_timer.start();
 
 	return true;
 }
 
-void us_mfa::shutdown() {
+void us_mfa::destroy_socket(raw_socket *sock) {
 #ifndef LINUX_NO_MMAP
-	if (m_mmaped) {
-		munmap(m_mmaped, m_mmapedlen);
+	if (sock->m_mmapped) {
+		munmap(sock->m_mmapped, sock->m_mmappedlen);
 
 		tpacket_req req;
 		memset(&req, 0, sizeof(req));
-		setsockopt(m_rawsock.fd(), SOL_PACKET, PACKET_RX_RING,
+		setsockopt(sock->fd(), SOL_PACKET, PACKET_RX_RING,
 				&req, sizeof(req));
 	}
 #endif
 
-	m_rawsock.unregister();
+	sock->unregister();
+
+}
+
+void us_mfa::shutdown() {
+	for (ifid_socket_map::iterator i = m_ifid_socket.begin(); i != m_ifid_socket.end(); i++) {
+		raw_socket *sock = i->second;
+		m_ifid_socket.erase(i);
+		destroy_socket(sock);
+		delete sock;
+	}
 
 	g_mrd->register_source_discovery("data-plane", 0);
 }
@@ -662,12 +686,12 @@ void us_mfa::update_stats() {
 
 #define MAX_EAT_ONE_CYCLE 100
 
-void us_mfa::data_available(uint32_t) {
+void us_mfa::data_available(raw_socket *sock) {
 #ifndef LINUX_NO_MMAP
-	if (m_mmaped) {
+	if (sock->m_mmapped) {
 		int i = 0;
-		while (i < MAX_EAT_ONE_CYCLE && *(unsigned long *)m_mmapbuf) {
-			tpacket_hdr *hdr = (tpacket_hdr *)m_mmapbuf;
+		while (i < MAX_EAT_ONE_CYCLE && *(unsigned long *)sock->m_mmapbuf) {
+			tpacket_hdr *hdr = (tpacket_hdr *)sock->m_mmapbuf;
 			sockaddr_ll *sa = (sockaddr_ll *)(((uint8_t *)hdr)
 					+ TPACKET_ALIGN(sizeof(*hdr)));
 			uint8_t *bp = ((uint8_t *)hdr) + hdr->tp_mac;
@@ -677,9 +701,9 @@ void us_mfa::data_available(uint32_t) {
 				handle_ipv6(sa->sll_ifindex, bp, hdr->tp_len);
 
 			hdr->tp_status = 0;
-			m_mmapbuf += m_framesize;
-			if (m_mmapbuf >= (((uint8_t *)m_mmaped) + m_mmapedlen))
-				m_mmapbuf = (uint8_t *)m_mmaped;
+			sock->m_mmapbuf += sock->m_framesize;
+			if (sock->m_mmapbuf >= (((uint8_t *)sock->m_mmapped) + sock->m_mmappedlen))
+				sock->m_mmapbuf = (uint8_t *)sock->m_mmapped;
 			i++;
 		}
 	} else {
@@ -689,7 +713,7 @@ void us_mfa::data_available(uint32_t) {
 
 		int len;
 
-		while ((len = g_mrd->ipktb->recvfrom(m_rawsock.fd(),
+		while ((len = g_mrd->ipktb->recvfrom(sock->fd(),
 					(sockaddr *)&sa, &salen)) > 0) {
 			if (sa.sll_protocol == htons(ETH_P_IPV6)
 				&& sa.sll_pkttype != PACKET_OUTGOING)
@@ -793,6 +817,12 @@ void us_mfa::forward(interface *intf, ip6_hdr *hdr, uint16_t len) const {
 		return;
 	}
 
+	/* Any socket will do. */
+	ifid_socket_map::const_iterator i = m_ifid_socket.begin();
+	if (i == m_ifid_socket.end())
+		return;
+	raw_socket *sock = i->second;
+
 	sockaddr_ll sa;
 
 	memset(&sa, 0, sizeof(sa));
@@ -807,7 +837,7 @@ void us_mfa::forward(interface *intf, ip6_hdr *hdr, uint16_t len) const {
 	sa.sll_addr[1] = 0x33;
 	memcpy(sa.sll_addr + 2, hdr->ip6_dst.s6_addr + 12, 4);
 
-	if (::sendto(m_rawsock.fd(), hdr, len, 0,
+	if (::sendto(sock->fd(), hdr, len, 0,
 			(const sockaddr *)&sa, sizeof(sa)) < 0) {
 		if (errno == ENETDOWN)
 			g_mrd->remove_interface(intf);
@@ -865,14 +895,30 @@ void us_mfa::send_icmpv6_toobig(interface *intf, ip6_hdr *hdr, uint16_t len) con
 void us_mfa::added_interface(interface *intf) {
 	if (intf->is_virtual())
 		return;
+	
+	std::string name("us-mfa sock [");
+	name.append(intf->name());
+	name.append("]");
+	raw_socket *sock = new raw_socket(name.c_str(), this);
+	const int fd = create_socket(sock, intf);
+	if (fd < 0) {
+		if (should_log(WARNING)) {
+			log().xprintf("[MFA] Failed to create socket to listen on interface %s.\n",
+				      intf->name());
+		}
+		return;
+	}
 
+	sock->register_fd(fd);
+	m_ifid_socket[intf->index()] = sock;
+	
 	packet_mreq mreq;
 	memset(&mreq, 0, sizeof(mreq));
 
 	mreq.mr_ifindex = intf->index();
 	mreq.mr_type = PACKET_MR_ALLMULTI;
 
-	if (setsockopt(m_rawsock.fd(), SOL_PACKET, PACKET_ADD_MEMBERSHIP,
+	if (setsockopt(fd, SOL_PACKET, PACKET_ADD_MEMBERSHIP,
 					&mreq, sizeof(mreq)) < 0) {
 		if (should_log(WARNING)) {
 			log().xprintf("Failed to set ALLMULTI on %s, may "
@@ -880,19 +926,32 @@ void us_mfa::added_interface(interface *intf) {
 				      intf->name());
 		}
 	}
+
+	if (should_log(DEBUG)) {
+		log().xprintf("[MFA] Started listening on interface %s (%i)\n",
+			      intf->name(), intf->index());
+	}
+
 }
 
 void us_mfa::removed_interface(interface *intf) {
 	if (intf->is_virtual())
 		return;
 
-	packet_mreq mreq;
-	memset(&mreq, 0, sizeof(mreq));
+	ifid_socket_map::iterator i = m_ifid_socket.find(intf->index());
+	if (i == m_ifid_socket.end())
+		return;
 
-	mreq.mr_ifindex = intf->index();
-	mreq.mr_type = PACKET_MR_ALLMULTI;
-	setsockopt(m_rawsock.fd(), SOL_PACKET, PACKET_DROP_MEMBERSHIP,
-					&mreq, sizeof(mreq));
+	raw_socket *sock = i->second;
+	m_ifid_socket.erase(i);
+
+	destroy_socket(sock);
+	delete sock;
+
+	if (should_log(DEBUG)) {
+		log().xprintf("[MFA] Stopped listening on interface %s (%i)\n",
+			      intf->name(), intf->index());
+	}
 
 	/* some bad boys may have left us pending state, clean it */
 	for (groups::iterator k = m_groups.begin(); k != m_groups.end(); ++k) {

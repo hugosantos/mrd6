@@ -2,8 +2,8 @@
  * Multicast Routing Daemon (MRD)
  *   us_mfa.h
  *
+ * Copyright (C) 2009, 2010 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2009 - Teemu Kiviniemi
- * Copyright (C) 2009 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2006, 2007 - Hugo Santos
  * Copyright (C) 2004..2006 - Universidade de Aveiro, IT Aveiro
  *
@@ -36,6 +36,8 @@
 #ifndef LINUX_NO_TRANSLATOR
 #include <mrdpriv/linux/translator.h>
 #endif
+
+#include <mrdpriv/linux/raw_socket.h>
 
 #include <stdint.h>
 
@@ -227,13 +229,17 @@ public:
 
 	void clear_interface_references(interface *);
 
+	typedef linux_raw_socket<us_mfa> raw_socket;
+	void data_available(raw_socket *);
 private:
-	void data_available(uint32_t);
+	typedef std::map<int, raw_socket *> ifid_socket_map;
+	ifid_socket_map m_ifid_socket;
+
 	void handle_ipv6(int, uint8_t *, uint16_t);
+	int create_socket(raw_socket *, interface *intf);
+	void destroy_socket(raw_socket *);
 
 	void log_failed_packet(const interface *, int) const;
-
-	socket0<us_mfa> m_rawsock;
 
 	data_plane_source_discovery m_sourcedisc;
 
@@ -241,13 +247,6 @@ private:
 	translator m_translator;
 	friend class translator;
 	friend class us_mfa_group_source;
-#endif
-
-#ifndef LINUX_NO_MMAP
-	void *m_mmaped;
-	uint32_t m_mmapedlen;
-	uint32_t m_framesize;
-	uint8_t *m_mmapbuf;
 #endif
 
 	void update_stats();
