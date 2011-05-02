@@ -35,6 +35,7 @@
 #ifndef _Ptree_h_
 #define _Ptree_h_
 
+#include <cstddef>
 #include <stdint.h>
 #include <algorithm>
 #include <mrd/log.h>

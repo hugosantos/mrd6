@@ -171,7 +171,7 @@ int parser_context::eat(int count, ...) {
 int parser_context::read_token(bool strict, int *sym, const char **symstart,
 			       bool eat) {
 	int res, readnum;
-	int pointer = 0, prevpointer = 0;
+	int pointer = 0;
 	int linenumber = m_current_line;
 	int state = 0;
 	const char *currline = m_input_line_start;
@@ -236,7 +236,6 @@ int parser_context::read_token(bool strict, int *sym, const char **symstart,
 			break;
 		}
 
-		prevpointer = pointer;
 		pointer += readnum;
 	}
 
