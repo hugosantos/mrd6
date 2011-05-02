@@ -403,7 +403,7 @@ bool timermgr::output_info(base_stream &ctx, bool extended) const {
 		namelen = 50;
 
 	char fmt[64];
-	snprintf(fmt, sizeof(fmt), "| %%%is | %%12s | %%10s | %%8s |", (int)namelen);
+	snprintf(fmt, sizeof(fmt), "| %%%zs | %%12s | %%10s | %%8s |", namelen);
 
 	_draw_sep(ctx, namelen);
 	ctx.printf(fmt, "timer name", "time left", "interval", "repeat").newl();
