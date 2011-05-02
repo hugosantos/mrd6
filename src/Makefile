@@ -51,7 +51,9 @@ SOURCES = address.cpp address_set.cpp group.cpp icmp_inet6.cpp icmp.cpp \
 	  parser.cpp rib.cpp router.cpp timers.cpp support/objpool.cpp \
 	  support/ptree.cpp
 
+ifneq ($(shell $(CXX) -c test_dl_inclusion_in_libc.cpp 1>/dev/null 2>&1 ; echo $$? ; rm -f test_dl_inclusion_in_libc.o),0)
 LDFLAGS += -ldl # mrd.cpp requires dl* functions
+endif
 
 ifeq ($(PLATFORM),OS_LINUX)
 	SOURCES += linux/us_mfa.cpp linux/linux_icmp_raw.cpp \
