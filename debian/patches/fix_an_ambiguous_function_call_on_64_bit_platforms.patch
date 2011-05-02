@@ -1,0 +1,33 @@
+From af580f8003c114977318f975eb8b6aee98bd2244 Mon Sep 17 00:00:00 2001
+From: Hugo Santos <hugo@fivebits.net>
+Date: Tue, 4 May 2010 18:52:20 +0200
+Subject: Fix an ambiguous function call on 64-bit platforms
+
+Cast m_read.size and m_write.size in uint32_t to fix ambiguous function call
+on 64-bit platforms in mrd::show_info
+
+Origin: upstream, http://fivebits.net/proj/mrd6/changeset/1718
+Forwarded: http://fivebits.net/proj/mrd6/changeset/1718
+Last-Update: 2010-05-04
+Applied-Upstream: commit: r1718
+---
+ src/mrd.cpp |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/src/mrd.cpp b/src/mrd.cpp
+index 5c16a69..0c86835 100644
+--- a/src/mrd.cpp
++++ b/src/mrd.cpp
+@@ -2338,7 +2338,8 @@ bool mrd::show_info(base_stream &out, const std::vector<std::string> &ctx) {
+ 
+ 	out.xprintf("Uptime: %{duration}\n", time_duration((time(0) - m_startup) * 1000));
+ 	out.xprintf("Performed tasks: %u (spent %llu ms)\n", m_tasks_stat, m_tasks_time_spent);
+-	out.xprintf("Registered sockets: %u reading, %u writing\n", m_read.size(), m_write.size());
++	out.xprintf("Registered sockets: %u reading, %u writing\n",
++		(uint32_t)m_read.size(), (uint32_t)m_write.size());
+ 	out.xprintf("MRIB prefix count: %u\n", mrib().registry_prefix_count());
+ 	out.xprintf("Interface count: %u\n", m_intflist.size());
+ 	out.xprintf("Group state count: %u\n", m_grplist.size());
+-- 
+1.7.1
+

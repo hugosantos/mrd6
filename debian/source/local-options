@@ -1,0 +1,6 @@
+# Also ignore .git-dpm and gbp.conf
+extend-diff-ignore = "(?:^|/)\.git(ignore|-dpm)?(?:$|/.*$)"
+extend-diff-ignore = "(?:^|/)gbp\.conf(?:$|/.*$)"
+tar-ignore = .gitignore
+tar-ignore = .git-dpm
+tar-ignore = gbp.conf

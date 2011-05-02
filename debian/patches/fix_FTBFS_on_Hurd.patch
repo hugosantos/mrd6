@@ -1,0 +1,46 @@
+From 509752b20d19a5c127d5a7787c2dab345726ac44 Mon Sep 17 00:00:00 2001
+From: Thomas Preud'homme <thomas.preudhomme@celest.fr>
+Date: Tue, 4 May 2010 21:02:00 +0200
+Subject: Fix FTBFS on Hurd
+
+Add missing SA_SIGINFO define and handle the absence of PATH_MAX.
+
+Origin: vendor
+Forwarded: http://github.com/hugosantos/mrd6/commit/680dbf95c919280f26f345e3ec42e830a08476ee
+Last-Update: 2010-05-13
+Applied-Upstream: commit: 680dbf95c919280f26f345e3ec42e830a08476ee
+---
+ src/mrd.cpp |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/src/mrd.cpp b/src/mrd.cpp
+index 3d09ac7..a1e941d 100644
+--- a/src/mrd.cpp
++++ b/src/mrd.cpp
+@@ -66,6 +66,10 @@
+ #define IPV6_RECVPKTINFO IPV6_PKTINFO
+ #endif
+ 
++#if !defined(SA_SIGINFO) && defined(__gnu_gurd__)
++#define SA_SIGINFO 0x00000004u
++#endif
++
+ #define CRASH_COMMAND
+ 
+ mrd *g_mrd = 0;
+@@ -1976,10 +1980,8 @@ bool mrd::load_modulex(const char *name) {
+ 		return false;
+ 	}
+ 
+-	char tmp[PATH_MAX];
+-	strncpy(tmp, path.c_str(), sizeof(tmp));
+-
+-	void *foo = dlopen(tmp, RTLD_NOW | RTLD_GLOBAL);
++	/* There will be a FS limit so don't worry for the size */
++	void *foo = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+ 
+ 	module_init_sig *load = 0;
+ 	if (foo) {
+-- 
+1.7.1
+

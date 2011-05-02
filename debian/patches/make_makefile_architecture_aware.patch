@@ -1,0 +1,60 @@
+From a795fdcafb9425207226adefc1457ede05e0f82c Mon Sep 17 00:00:00 2001
+From: Thomas Preud'homme <thomas.preudhomme@celest.fr>
+Date: Mon, 3 May 2010 17:15:57 +0200
+Subject: Make Makefile architecture aware
+
+The Makefile behaves differently depending on the value of $(PLATFORM) but this
+variable is not set appropriately on the various supported kernels. This patch
+sets PLATFORM depending on the value of uname -s
+
+Origin: vendor
+Forwarded: http://github.com/hugosantos/mrd6/issues/issue/3
+Last-Update: 2010-05-03
+---
+ src/Makefile |   13 +++++++++++--
+ 1 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/src/Makefile b/src/Makefile
+index 8b2143b..bceb6a5 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -2,7 +2,7 @@
+ 
+ CXX ?= g++
+ 
+-PLATFORM ?= OS_LINUX
++PLATFORM ?= OS_OTHER
+ SUPPORT_MODULES ?= yes
+ TARGET ?= mrd
+ PREFIX ?= /usr/local
+@@ -17,6 +17,14 @@ MODULES_CPP = $(OBJ_DIR)/modules.cpp
+ 
+ STATIC_MODULES ?= MLD PIM CONSOLE
+ 
++KERNEL = $(shell uname -s)
++ifeq ($(KERNEL),Linux)
++	PLATFORM = OS_LINUX
++endif
++ifneq (,$(findstring BSD,$(KERNEL)))
++	PLATFORM = OS_BSD
++endif
++
+ ifeq ($(FULL_STATIC),yes)
+ 	SUPPORT_MODULES = no
+ 	LDCMD = -static
+@@ -38,10 +46,11 @@ SOURCES = address.cpp address_set.cpp group.cpp icmp_inet6.cpp icmp.cpp \
+ 	  parser.cpp rib.cpp router.cpp timers.cpp support/objpool.cpp \
+ 	  support/ptree.cpp
+ 
++LDFLAGS += -ldl # mrd.cpp requires dl* functions
++
+ ifeq ($(PLATFORM),OS_LINUX)
+ 	SOURCES += linux/us_mfa.cpp linux/linux_icmp_raw.cpp \
+ 		   linux/linux_unicast_route.cpp linux/mrd_components.cpp
+-	LDFLAGS += -ldl
+ endif
+ 
+ ifeq ($(PLATFORM),OS_BSD)
+-- 
+1.7.1
+

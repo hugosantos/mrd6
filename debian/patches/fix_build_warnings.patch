@@ -1,0 +1,57 @@
+From 8214426d0eea06aa2d33cc387af54164feec3aab Mon Sep 17 00:00:00 2001
+From: Thomas Preud'homme <thomas.preudhomme@celest.fr>
+Date: Wed, 5 May 2010 15:20:00 +0200
+Subject: Fix build warnings.
+
+- Disable strict aliasing as mrd6 violates aliasing rules
+- Use --as-needed to avoid unecessary library links
+
+Origin: vendor
+Forwarded: http://github.com/hugosantos/mrd6/issues/issue/2
+Last-Updated: 2010-05-05
+Applied-Upstream: commit: 83f3bc69c38e7b1d0948288ed69451f871a43d03
+---
+ src/Makefile |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/src/Makefile b/src/Makefile
+index bceb6a5..0e7c2b3 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -33,6 +33,7 @@ endif
+ ifeq ($(SUPPORT_MODULES),yes)
+ 	MODULES ?= BGP
+ 	LDCMD = -rdynamic
++	LDMODCMD = -Wl,--as-needed
+ else
+ 	MODULE_OPTIONS += -DMRD_NO_DYNAMIC_MODULE_LOADING
+ endif
+@@ -101,7 +102,7 @@ TESTS = tests/address_unittest tests/ptree_unittest tests/mrib_unittest
+ DEST_PREFIX = $(DESTDIR)$(PREFIX)
+ 
+ CXXFLAGS = $(INCLUDES) -ansi -Wall -Wno-multichar -fno-exceptions -fPIC \
+-	   -D$(PLATFORM) $(addprefix -D,$(MODULE_OPTIONS))
++	   -fno-strict-aliasing -D$(PLATFORM) $(addprefix -D,$(MODULE_OPTIONS))
+ 
+ ifeq ($(OPTIMIZE),yes)
+ 	ifeq ($(SPACE_OPTIMIZE),yes)
+@@ -119,6 +120,7 @@ else
+ endif
+ 
+ LDFLAGS += -lm
++LDCMD += -Wl,--as-needed
+ 
+ ifeq ($(STATIC_STDCXX),no)
+ 	LDFLAGS += -lstdc++
+@@ -135,7 +137,7 @@ define module_template
+ BUILT_SOURCES += $$($(1)_SOURCES)
+ $$($(1)_TARGET): $$(addprefix $(OBJ_DIR)/,$($(1)_SOURCES:.cpp=.o))
+ 	@echo "Module $$($(1)_TARGET)"
+-	@$(CXX) -shared $(CXXFLAGS) -o $$($(1)_TARGET) \
++	@$(CXX) -shared $(LDMODCMD) $(CXXFLAGS) -o $$($(1)_TARGET) \
+ 		$$(addprefix $(OBJ_DIR)/,$($(1)_SOURCES:.cpp=.o))
+ endef
+ 
+-- 
+1.7.1
+

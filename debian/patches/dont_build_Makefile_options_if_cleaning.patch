@@ -1,0 +1,31 @@
+From d84d95e8028bbe29f943ea3362fd4a85f3bd3e08 Mon Sep 17 00:00:00 2001
+From: Thomas Preud'homme <thomas.preudhomme@celest.fr>
+Date: Wed, 5 May 2010 20:52:09 +0200
+Subject: Don't build Makefile.options if cleaning
+
+Don't include Makefile.options if we are cleaning so that it is not created if
+we are cleaning.
+
+Origin: vendor
+Forwarded: yes
+Last-Update: 2010-05-05
+---
+ src/Makefile |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/src/Makefile b/src/Makefile
+index 0e7c2b3..ff17486 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -1,4 +1,8 @@
++ifneq ($(MAKECMDGOALS),clean)
++ifneq ($(MAKECMDGOALS),distclean)
+ -include Makefile.options
++endif
++endif
+ 
+ CXX ?= g++
+ 
+-- 
+1.7.1
+
