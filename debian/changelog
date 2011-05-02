@@ -1,14 +1,99 @@
+mrd6 (0.9.6-5) unstable; urgency=low
+
+  * Don't use any debian/* files from orig.tar.gz.
+
+ -- Thomas Preud'homme <robotux@celest.fr>  Fri, 22 Apr 2011 00:27:32 +0200
+
+mrd6 (0.9.6-4) unstable; urgency=low
+
+  * Fix FTBFS on Hurd.
+  * Add missing dependency on $syslog in init script.
+  * debian/watch:
+    + Track new upstream repository on github.
+  * debian/control:
+    + Recommends perl as mrd6sh needs it.
+    + Bumps Standards-Version to 3.9.2 (no changes needed).
+  * debian/copyright:
+    + Convert to DEP5 candidate format.
+  * debian/compat:
+    + Bumps debhelper compatibility from 7 to 8 (no changes needed).
+
+ -- Thomas Preud'homme <robotux@celest.fr>  Mon, 18 Oct 2010 22:01:51 +0200
+
+mrd6 (0.9.6-3) unstable; urgency=low
+
+  * Make dl* functions available on all archs (Fix FTBFS on *BSD).
+  * debian/control:
+    + Bumps Standards-Version to 3.9.1 (no changes needed).
+
+ -- Thomas Preud'homme <robotux@celest.fr>  Mon, 09 Aug 2010 22:18:03 +0200
+
 mrd6 (0.9.6-2) unstable; urgency=low
 
-  * Now really fix S390 building issues (Closes: #455280)
+  * New maintainer. (Closes: #572373)
+  * Acknowledge NMUs. (Closes: #507211)
+  * Make Makefile architecture aware (fix FTBFS on *BSD).
+  * Fix FTBFS on Hurd.
+  * Support status command in init script.
+  * Fix lintian errors and warnings:
+    - Add dependency on remote_fs in init script
+    - Use invoke-rc.d in init script
+    - Add a ${misc:Depends} build dependency.
+  * Switch to dpkg-source 3.0 (quilt) format.
+  * Update Standards-Version to 3.8.4.
+  * Bumps debhelper compatibility to 7.
+    - Uses a dh based debian/rules.
+  * Fix build warnings:
+    - Disable strict aliasing as mrd6 violates aliasing rules
+    - Avoid unnecessary libgcc dependency thanks to Pierre Habouzit
+  * Deactivate watch file as upstream tarballs are no longer reachable.
+  * Set Vcs-Browser and Vcs-Git fields.
 
- -- Hugo Santos <hugo@fivebits.net>  Fri,  4 Jul 2008 14:59:21 +0200
+ -- Thomas Preud'homme <robotux@celest.fr>  Wed, 05 May 2010 22:47:16 +0200
+
+mrd6 (0.9.6-1.3) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * add #include's in src/mrd.cpp and src/bgp/bgp.cpp to fix FTBFS.
+    Thanks, James Westby for the patch.
+    (Closes: #507211)
+
+ -- Daniel Kahn Gillmor <dkg@fifthhorseman.net>  Sun, 22 Mar 2009 20:13:42 -0400
+
+mrd6 (0.9.6-1.2) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Apply patch from upstream (r1722) to fix FTBFS on s390. Affects:
+    - include/mrd/log.h
+    - src/log.cpp
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 16 Sep 2008 19:53:14 +0200
+
+mrd6 (0.9.6-1.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Apply patch from upstream to fix FBTFS on s390, mips and mipsel. Effects:
+    - src/linux/mrd_components.cpp
+    - src/mrd.cpp
+
+ -- Lior Kaplan <kaplan@debian.org>  Sat, 09 Feb 2008 13:08:17 +0200
 
 mrd6 (0.9.6-1) unstable; urgency=low
 
-  * New upstream release.
+  [ Hugo Santos ]
+  * New upstream release (Closes: #462786)
+    - Incorporates NMU changes (Closes: #423063, #417436)
+  * Now really fix FTBFS with GCC 4.3 (Closes: #455280)
 
- -- Hugo Santos <hugo@fivebits.net>  Fri,  4 Jul 2008 14:59:21 +0200
+  [ Lior Kaplan ]
+  * Bump standards-version to 3.7.3
+    - Move homepage to a regular header.
+  * Fix debian-changelog-line-too-long lintian warning.
+  * Fix debian-rules-ignores-make-clean-error lintain warning.
+  * Add a debian version number to differentiate this package from upstream's 
+    native package.
+
+ -- Hugo Santos <hugo@fivebits.net>  Thu, 31 Jan 2008 11:51:25 +0200
 
 mrd6 (0.9.5-rev3.dfsg-0.2) unstable; urgency=low
 

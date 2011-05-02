@@ -1,0 +1,54 @@
+From 271c4359c0388fe32f78f86f8fa2a75a9e62d234 Mon Sep 17 00:00:00 2001
+From: Hugo Santos <hugo@fivebits.net>
+Date: Fri, 6 Jun 2008 10:41:02 +0200
+Subject: Fix a FTBFS on s390
+
+Fix usage of size_t on s390
+
+Origin: upstream, http://fivebits.net/proj/mrd6/changeset/1722
+Bug-Debian: http://bugs.debian.org/466838
+Forwarded: http://fivebits.net/proj/mrd6/changeset/1722
+Last-Update: 2010-05-04
+Applied-Upstream: commit: r1722
+---
+ include/mrd/log.h |    6 ++++++
+ src/log.cpp       |    9 +++++++++
+ 2 files changed, 15 insertions(+), 0 deletions(-)
+
+diff --git a/include/mrd/log.h b/include/mrd/log.h
+index a8c6d99..c0b0905 100644
+--- a/include/mrd/log.h
++++ b/include/mrd/log.h
+@@ -53,6 +53,12 @@ void stream_push_formated_type(base_stream &, uint64_t val);
+ void stream_push_formated_type(base_stream &, const char *val);
+ void stream_push_formated_type(base_stream &, const void *val);
+ 
++
++#ifdef __s390__
++const char *stream_type_format_parameter(size_t);
++void stream_push_formated_type(base_stream &, size_t val);
++#endif
++
+ /*!
+  * base log stream
+  */
+diff --git a/src/log.cpp b/src/log.cpp
+index a12261e..2234810 100644
+--- a/src/log.cpp
++++ b/src/log.cpp
+@@ -667,3 +667,12 @@ void stream_push_formated_type(base_stream &os, const void *val) {
+ 	os.nprintf(32, "%p", val);
+ }
+ 
++#ifdef __s390__
++const char *stream_type_format_parameter(size_t) {
++	return "u";
++}
++
++void stream_push_formated_type(base_stream &os, size_t val) {
++	os.nprintf(32, "%z", val);
++}
++#endif
+-- 
+1.7.1
+

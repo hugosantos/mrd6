@@ -1,14 +1,17 @@
 Source: mrd6
 Section: net
 Priority: optional
-Maintainer: Hugo Santos <hugo@fivebits.net>
-Build-Depends: debhelper (>= 5.0.0), perl
-Standards-Version: 3.7.3
+Maintainer: Thomas Preud'homme <robotux@celest.fr>
+Build-Depends: debhelper (>= 8.0.0), perl
+Standards-Version: 3.9.2
 Homepage: http://fivebits.net/proj/mrd6/
+Vcs-Browser: http://git.debian.org/?p=collab-maint/mrd6.git;a=summary
+Vcs-Git: git://git.debian.org/collab-maint/mrd6.git
 
 Package: mrd6
 Architecture: any
-Depends: ${shlibs:Depends}, lsb-base
+Depends: ${shlibs:Depends}, ${misc:Depends}, lsb-base
+Recommends: ${perl:Depends}
 Description: IPv6 Multicast Routing Daemon
  mrd6 is a modular IPv6 Multicast Routing Daemon which implements:
    * MLDv1 and MLDv2 support
@@ -28,5 +31,3 @@ Description: IPv6 Multicast Routing Daemon
      (tested IPv6-IPv4, IPv6-IPv6 and TUN/TAP tunnels)
    * Abstract Forwarding Interface (MFA) with user-space module
    * Remote configuration and online administration
- .
- Homepage: http://fivebits.net/proj/mrd6/

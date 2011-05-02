@@ -1,0 +1,32 @@
+From ef89e5707b4665476438e0a17228179e0655123e Mon Sep 17 00:00:00 2001
+From: Hugo Santos <hugo@fivebits.net>
+Date: Tue, 4 May 2010 18:52:35 +0200
+Subject: Fix FTBFS on mips and mipsel
+
+Exception and interrupt handlers on mips and mipsel architectures copy program
+counter in EPC register so let's use EPC when getting current frame.
+
+Origin: upstream, http://fivebits.net/proj/mrd6/changeset/1717
+Forwarded: http://fivebits.net/proj/mrd6/changeset/1717
+Last-Update: 2010-05-04
+Applied-Upstream: commit: r1717
+---
+ src/linux/mrd_components.cpp |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/src/linux/mrd_components.cpp b/src/linux/mrd_components.cpp
+index ca6eff1..1d0a463 100644
+--- a/src/linux/mrd_components.cpp
++++ b/src/linux/mrd_components.cpp
+@@ -92,8 +92,6 @@ void *mrd::posix_uctx::get_current_frame() const {
+ #if defined(__GLIBC__)
+ #if defined(__i386__)
+ 	return (void *)base->uc_mcontext.gregs[REG_EIP];
+-#elif defined(__mips__)
+-	return (void *)base->uc_mcontext.gpregs[CTX_EPC];
+ #endif
+ #endif
+ 	return 0;
+-- 
+1.7.1
+

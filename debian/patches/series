@@ -1,0 +1,8 @@
+fix_FTBFS_on_mips_mipsel.patch
+fix_an_ambiguous_function_call_on_64_bit_platforms.patch
+466838_fix_a_FTBFS_on_s390.patch
+507211_include_climits_header_when_used.patch
+make_makefile_architecture_aware.patch
+fix_FTBFS_on_Hurd.patch
+fix_build_warnings.patch
+dont_build_Makefile_options_if_cleaning.patch

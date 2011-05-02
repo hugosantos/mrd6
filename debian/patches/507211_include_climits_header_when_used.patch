@@ -1,0 +1,44 @@
+From adce927e0c0c58226e8152bd78aa626fc9e949a7 Mon Sep 17 00:00:00 2001
+From: James Westby <james.westby@canonical.com>
+Date: Mon, 3 May 2010 17:49:16 +0200
+Subject: Add climits header when used
+
+Include climits in file using PATH_MAX or INT_MAX
+
+Origin: vendor, http://bugs.debian.org/cgi-bin/bugreport.cgi?msg=5;filename=tmpdulqaW;att=1;bug=507211
+Bug-Debian: http://bugs.debian.org/507211
+Forwarded: yes
+Last-Update: 2010-05-03
+Applied-Upstream: commit: 83f3bc69c38e7b1d0948288ed69451f871a43d03
+---
+ src/bgp/bgp.cpp |    1 +
+ src/mrd.cpp     |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/src/bgp/bgp.cpp b/src/bgp/bgp.cpp
+index d4b9fec..cc1593b 100644
+--- a/src/bgp/bgp.cpp
++++ b/src/bgp/bgp.cpp
+@@ -35,6 +35,7 @@
+ #include <fcntl.h>
+ #include <errno.h>
+ #include <unistd.h>
++#include <limits.h>
+ 
+ #include <map>
+ 
+diff --git a/src/mrd.cpp b/src/mrd.cpp
+index 0c86835..3d09ac7 100644
+--- a/src/mrd.cpp
++++ b/src/mrd.cpp
+@@ -44,6 +44,7 @@
+ #include <cstdarg>
+ #include <cstdlib>
+ #include <errno.h>
++#include <climits>
+ 
+ #include <unistd.h>
+ #include <fcntl.h>
+-- 
+1.7.1
+
