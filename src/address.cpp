@@ -2,7 +2,7 @@
  * Multicast Routing Daemon (MRD)
  *   address.cpp
  *
- * Copyright (C) 2009 - Teemu Kiviniemi
+ * Copyright (C) 2009, 2011 - Teemu Kiviniemi
  * Copyright (C) 2009 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2006, 2007 - Hugo Santos
  * Copyright (C) 2004..2006 - Universidade de Aveiro, IT Aveiro
@@ -112,6 +112,8 @@ unsigned inet6_addr::type() const {
 bool inet6_addr::operator < (const inet6_addr &address) const {
 	if (prefixlen < address.prefixlen)
 		return true;
+	else if (prefixlen > address.prefixlen)
+		return false;
 	return memcmp(addr.s6_addr, address.addr.s6_addr, sizeof(in6_addr)) < 0;
 }
 
