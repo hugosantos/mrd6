@@ -57,8 +57,11 @@ endif
 
 ifeq ($(PLATFORM),OS_LINUX)
 	SOURCES += linux/us_mfa.cpp linux/linux_icmp_raw.cpp \
-		   linux/linux_unicast_route.cpp linux/mrd_components.cpp \
-		   linux/translator.cpp
+		   linux/linux_unicast_route.cpp linux/mrd_components.cpp
+		   
+ifeq (,$(findstring LINUX_NO_TRANSLATOR,$(MODULE_OPTIONS)))
+	SOURCES += linux/translator.cpp
+endif
 endif
 
 ifeq ($(PLATFORM),OS_BSD)

@@ -2,7 +2,7 @@
  * Multicast Routing Daemon (MRD)
  *   interface.cpp
  *
- * Copyright (C) 2009 - Teemu Kiviniemi
+ * Copyright (C) 2009, 2011 - Teemu Kiviniemi
  * Copyright (C) 2009 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2006, 2007 - Hugo Santos
  * Copyright (C) 2004..2006 - Universidade de Aveiro, IT Aveiro
@@ -238,6 +238,8 @@ static const char *_type_name(int type, int flags) {
 		return "802.11";
 	case interface::IEEE802_1Q:
 		return "vlan";
+	case interface::IPv4_Translator:
+		return "translator";
 	default:
 		return "unknown";
 	}
