@@ -2,7 +2,7 @@
  * Multicast Routing Daemon (MRD)
  *   translator.cpp - IPv4 to IPv6 multicast translator
  *
- * Copyright (C) 2009, 2010 - Teemu Kiviniemi
+ * Copyright (C) 2009..2011 - Teemu Kiviniemi
  * Copyright (C) 2009 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2006, 2007 - Hugo Santos
  * Copyright (C) 2004..2006 - Universidade de Aveiro, IT Aveiro
@@ -126,6 +126,9 @@ bool translator::check_startup() {
 		log().writeline("Translator: Could not create virtual interface.");
 		return false;
 	}
+
+	/* Listen for MRIB events. */
+	g_mrd->mrib().install_listener(this);
 
 	/* Add route to unicast prefix via the virtual interface. */
 	g_mrd->mrib().local().register_prefix(m_p_unicast_prefix->get_address(), m_virtual_interface);
@@ -870,4 +873,24 @@ uint16_t translator::ipv4_checksum(const uint8_t *buf, uint16_t len) const {
 	uint16_t checksum = (uint16_t) (~sum);
 
 	return checksum;
+}
+
+/* Handle a new prefix in MRIB. */
+void translator::prefix_added(const inet6_addr &src, mrib_def::metric_def metric,
+					const mrib_def::prefix &prefix)
+{
+	if (prefix.metric == 0 &&
+		prefix.intf != m_virtual_interface &&
+		src == m_p_unicast_prefix->get_address()) {
+
+		if (should_log(EXTRADEBUG))
+			log().xprintf("Translator: Removing conflicting route %{Addr}.\n",
+					src);
+		g_mrd->mrib().local().unregister_prefix(src, prefix.intf);
+	}
+}
+
+/* Required by mrib_origin, not used here. */
+void translator::return_prefix(mrib_def::prefix *)
+{
 }

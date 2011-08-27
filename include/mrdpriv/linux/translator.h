@@ -2,7 +2,7 @@
  * Multicast Routing Daemon (MRD)
  *   translator.h - IPv4 to IPv6 multicast translator
  *
- * Copyright (C) 2009, 2010 - Teemu Kiviniemi
+ * Copyright (C) 2009..2011 - Teemu Kiviniemi
  * Copyright (C) 2009 - CSC - IT Center for Science Ltd.
  * Copyright (C) 2006, 2007 - Hugo Santos
  * Copyright (C) 2004..2006 - Universidade de Aveiro, IT Aveiro
@@ -42,7 +42,7 @@ class us_mfa;
 /*!
  * IPv4 to IPv6 multicast translator
  */
-class translator : public node, public icmp_handler {
+class translator : public node, public icmp_handler, public mrib_origin {
 public:
 
 	translator(us_mfa *);
@@ -78,6 +78,13 @@ public:
 
 	/* Set new MTU for a destination. */
 	void set_mtu(const in6_addr &, uint32_t);
+
+	/* Handle a new prefix in MRIB. */
+	void prefix_added(const inet6_addr &src, mrib_def::metric_def metric,
+						const mrib_def::prefix &prefix);
+
+	/* Required by mrib_origin, not used here. */
+	void return_prefix(mrib_def::prefix *);
 
 private:
 
