@@ -54,7 +54,7 @@ void stream_push_formated_type(base_stream &, const char *val);
 void stream_push_formated_type(base_stream &, const void *val);
 
 
-#ifdef __s390__
+#if defined (__s390__) && !defined (__s390x__)
 const char *stream_type_format_parameter(size_t);
 void stream_push_formated_type(base_stream &, size_t val);
 #endif
