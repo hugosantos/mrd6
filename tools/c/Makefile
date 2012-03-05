@@ -1,4 +1,5 @@
-CFLAGS = -g -O2 -Wall -ansi
+CFLAGS ?= -g -O2
+CFLAGS += -Wall -ansi
 
 PREFIX ?= /usr/local
 
