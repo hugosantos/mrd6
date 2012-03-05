@@ -111,7 +111,7 @@ TESTS = tests/address_unittest tests/ptree_unittest tests/mrib_unittest
 
 DEST_PREFIX = $(DESTDIR)$(PREFIX)
 
-CXXFLAGS = $(INCLUDES) -ansi -Wall -Wno-multichar -fno-exceptions -fPIC \
+CXXFLAGS += $(CPPFLAGS) $(INCLUDES) -ansi -Wall -Wno-multichar -fno-exceptions -fPIC \
 	   -fno-strict-aliasing -D$(PLATFORM) $(addprefix -D,$(MODULE_OPTIONS))
 
 ifeq ($(OPTIMIZE),yes)
@@ -148,7 +148,7 @@ BUILT_SOURCES += $$($(1)_SOURCES)
 $$($(1)_TARGET): $$(addprefix $(OBJ_DIR)/,$($(1)_SOURCES:.cpp=.o))
 	@echo "Module $$($(1)_TARGET)"
 	@$(CXX) -shared $(LDMODCMD) $(CXXFLAGS) -o $$($(1)_TARGET) \
-		$$(addprefix $(OBJ_DIR)/,$($(1)_SOURCES:.cpp=.o))
+		$$(addprefix $(OBJ_DIR)/,$($(1)_SOURCES:.cpp=.o)) $(LDFLAGS)
 endef
 
 define static_module_template
