@@ -667,7 +667,7 @@ void stream_push_formated_type(base_stream &os, const void *val) {
 	os.nprintf(32, "%p", val);
 }
 
-#ifdef __s390__
+#if defined (__s390__) && !defined (__s390x__)
 const char *stream_type_format_parameter(size_t) {
 	return "u";
 }
