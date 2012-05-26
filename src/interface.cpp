@@ -292,12 +292,16 @@ void interface::broadcast_change_state(bool wasdown) {
 	}
 }
 
-void interface::set_enabled(bool newstate) {
-	bool wasdown = !up();
-
-	mif_enabled = newstate;
-
-	broadcast_change_state(wasdown);
+void interface::set_enabled(bool newstate, bool newiface) {
+	if (!newiface) {
+		bool wasdown = !up();
+		mif_enabled = newstate;
+		broadcast_change_state(wasdown);
+	} else {
+		mif_state = (newstate) ? Up : Down;
+		mif_enabled = newstate;
+		g_mrd->broadcast_interface_state_changed(this);
+	}
 }
 
 bool interface::attach_node(interface_node *node) {

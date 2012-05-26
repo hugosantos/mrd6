@@ -204,7 +204,7 @@ private:
 
 	void add_remove_address(bool isnew, const inet6_addr &);
 	void broadcast_change_state(bool wasdown);
-	void set_enabled(bool);
+	void set_enabled(bool newstate, bool newiface=false);
 };
 
 uint16_t ipv6_checksum(uint8_t protocol, const in6_addr &src, const in6_addr &dst, const void *data, uint16_t len);

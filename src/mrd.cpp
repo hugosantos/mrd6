@@ -1484,7 +1484,7 @@ interface *mrd::found_interface(int index, const char *name, int type,
 			      (uint32_t)intf->mtu());
 	}
 
-	intf->set_enabled(enabled);
+	intf->set_enabled(enabled, true);
 
 	return intf;
 }
