@@ -199,7 +199,7 @@ static void _install_interface(const interface_desc &d) {
 			((linux_unicast_router &)g_mrd->rib()).do_dump(RTM_GETADDR);
 		}
 
-		intf->change_state(d.up ? interface::Up : interface::Down);
+		intf->change_state((d.up | intf->up()) ? interface::Up : interface::Down);
 	}
 }
 
