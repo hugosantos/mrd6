@@ -29,6 +29,8 @@
 #include <mrdpriv/linux/us_mfa.h>
 #include <mrdpriv/linux/icmp_raw.h>
 
+#include <unistd.h>
+
 #if defined(__GLIBC__) && !defined(__UCLIBC__)
 #include <execinfo.h>
 #endif
