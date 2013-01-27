@@ -66,7 +66,7 @@ public:
 
 	node *create_child(const char *);
 
-	virtual node *next_similiar_node() const;
+	virtual node *next_similar_node() const;
 
 	typedef std::vector<std::string> source_discs;
 
@@ -90,7 +90,7 @@ public:
 	virtual ~groupconf_node() {}
 
 	virtual bool fill_defaults() { return true; }
-	node *next_similiar_node() const;
+	node *next_similar_node() const;
 };
 
 /*!

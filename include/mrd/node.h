@@ -246,7 +246,7 @@ public:
 	 * Should return a less specific node related to this node. Used for
 	 * get_property when the node doesn't have the requested property.
 	 */
-	virtual node *next_similiar_node() const;
+	virtual node *next_similar_node() const;
 
 	enum content_type {
 		unknown = 0,
@@ -274,7 +274,7 @@ public:
 	virtual bool increment_property(const char *key, const char *value);
 	/*!
 	 * Returns a reference to the specified property. If strict=true,
-	 * similiar nodes aren't used in case this node doesn't contain
+	 * similar nodes aren't used in case this node doesn't contain
 	 * the specified property.
 	 */
 	const property_def *get_property(const char *key, bool strict = false) const;

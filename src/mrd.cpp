@@ -392,7 +392,7 @@ int conf_parser::prop_type(const state &s) {
 				} else {
 					node *p = *i;
 					while (1) {
-						p = p->next_similiar_node();
+						p = p->next_similar_node();
 						if (!p) {
 							return -1;
 						} else if (p->has_property(ident.c_str())) {
@@ -1518,7 +1518,7 @@ groupconf *mrd::match_group_configuration(const inet6_addr &addr) const {
 	return m_routing_table.match(addr);
 }
 
-groupconf *mrd::get_similiar_groupconf_node(const groupconf *gc) const {
+groupconf *mrd::get_similar_groupconf_node(const groupconf *gc) const {
 	return m_routing_table.match(gc->id(), gc);
 }
 
@@ -1623,7 +1623,7 @@ void mrd::discovered_source(int ifindex, const inet6_addr &grpmask,
 
 	while (conf) {
 		if (conf->get_source_discs().empty())
-			conf = (groupconf *)conf->next_similiar_node();
+			conf = (groupconf *)conf->next_similar_node();
 		else
 			break;
 	}

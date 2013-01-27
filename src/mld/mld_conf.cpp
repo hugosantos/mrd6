@@ -89,7 +89,7 @@ bool mld_intfconf_node::call_method(int id, base_stream &out,
 }
 
 bool mld_intfconf_node::set_property(const char *key, const char *value) {
-	if (!next_similiar_node()->has_property(key))
+	if (!next_similar_node()->has_property(key))
 		return false;
 
 	return set_property_inst(key, property_def::VAL_UNSIGNED, value);
