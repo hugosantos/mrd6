@@ -173,7 +173,7 @@ bool pim_router::call_method(int id, base_stream &out,
 		groupconf *conf = g_mrd->match_group_configuration(addr);
 		while (conf && !pconf) {
 			pconf = (pim_groupconf_node *)conf->get_child("pim");
-			conf = g_mrd->get_similiar_groupconf_node(conf);
+			conf = g_mrd->get_similar_groupconf_node(conf);
 		}
 
 		if (!pconf) {

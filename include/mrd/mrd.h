@@ -326,7 +326,7 @@ public:
 	std::list<inet6_addr> configured_group_set(const char *rt = 0) const;
 	groupconf *match_group_configuration(const inet6_addr &) const;
 	groupconf *get_group_configuration(const inet6_addr &) const;
-	groupconf *get_similiar_groupconf_node(const groupconf *) const;
+	groupconf *get_similar_groupconf_node(const groupconf *) const;
 
 	//
 	// Group Management stuff

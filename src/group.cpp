@@ -303,7 +303,7 @@ void static_source_discovery::group_interest_changed(group_node *n, bool include
 	while (gc) {
 		if (gc->get_child("sources"))
 			break;
-		gc = (groupconf *)gc->next_similiar_node();
+		gc = (groupconf *)gc->next_similar_node();
 	}
 
 	if (!gc) {
@@ -382,8 +382,8 @@ void groupconf::fill_defaults() {
 	}
 }
 
-node *groupconf::next_similiar_node() const {
-	return g_mrd->get_similiar_groupconf_node(this);
+node *groupconf::next_similar_node() const {
+	return g_mrd->get_similar_groupconf_node(this);
 }
 
 bool groupconf::call_method(int id, base_stream &out,
@@ -449,10 +449,10 @@ void groupconf::set_source_discs(const source_discs &d) {
 groupconf_node::groupconf_node(groupconf *parent, const char *name)
 	: conf_node(parent, name) {}
 
-node *groupconf_node::next_similiar_node() const {
+node *groupconf_node::next_similar_node() const {
 	node *curr = parent();
 
-	while ((curr = curr->next_similiar_node())) {
+	while ((curr = curr->next_similar_node())) {
 		node *child = curr->get_child(name());
 		if (child)
 			return child;
@@ -641,7 +641,7 @@ groupconf *group::groupconf_with_sourcedisc() const {
 	while (gc) {
 		if (!gc->srcdisc.empty())
 			break;
-		gc = (groupconf *)gc->next_similiar_node();
+		gc = (groupconf *)gc->next_similar_node();
 	}
 
 	return gc;

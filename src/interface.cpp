@@ -119,7 +119,7 @@ bool intfconf::is_router_enabled(const char *name) const {
 	return disabled_routers.find(name) == disabled_routers.end();
 }
 
-node *intfconf::next_similiar_node() const {
+node *intfconf::next_similar_node() const {
 	if (!strcmp(name(), "all"))
 		return 0;
 	return g_mrd->default_interface_configuration();
@@ -154,7 +154,7 @@ intfconf_node::intfconf_node(intfconf *parent, const char *name)
 	: conf_node(parent, name) {
 }
 
-node *intfconf_node::next_similiar_node() const {
+node *intfconf_node::next_similar_node() const {
 	if (strcmp(parent()->name(), "all") == 0)
 		return 0;
 	return g_mrd->default_interface_configuration()->get_child(name());
