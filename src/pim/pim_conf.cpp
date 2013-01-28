@@ -153,7 +153,8 @@ bool pim_intfconf_node::fill_defaults() {
 }
 
 bool pim_intfconf_node::set_property(const char *key, const char *val) {
-	if (!next_similar_node()->has_property(key))
+	node *next = next_similar_node();
+	if (next && !next->has_property(key))
 		return false;
 	if (!strcmp(key, "cisco-old-addrlist"))
 		return set_property_inst(key, property_def::VAL_BOOL, val);
