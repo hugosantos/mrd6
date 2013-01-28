@@ -279,7 +279,7 @@ std::string node::full_name() const {
 	}
 }
 
-node *node::next_similiar_node() const {
+node *node::next_similar_node() const {
 	return 0;
 }
 
@@ -386,7 +386,7 @@ property_def *node::get_property(const char *n, bool strict) {
 	properties::iterator i = m_properties.find(n);
 	if (i == m_properties.end()) {
 		if (!strict) {
-			node *next = next_similiar_node();
+			node *next = next_similar_node();
 
 			assert(next != this);
 
@@ -403,7 +403,7 @@ const property_def *node::get_property(const char *n, bool strict) const {
 	properties::const_iterator i = m_properties.find(n);
 	if (i == m_properties.end()) {
 		if (!strict) {
-			node *next = next_similiar_node();
+			node *next = next_similar_node();
 			if (next)
 				return next->get_property(n, false);
 		}
@@ -734,7 +734,7 @@ bool node::enable_several(const std::vector<std::string> &args, bool enable) {
 		if (!n->has_property(prop)) {
 			node *p = n;
 			while (1) {
-				p = p->next_similiar_node();
+				p = p->next_similar_node();
 				if (!p)
 					return false;
 				else if (p->has_property(prop)) {

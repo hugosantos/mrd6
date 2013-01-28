@@ -58,7 +58,7 @@ public:
 	bool call_method(int, base_stream &,
 			 const std::vector<std::string> &);
 
-	virtual node *next_similiar_node() const;
+	virtual node *next_similar_node() const;
 
 	bool is_enabled() const;
 
@@ -78,7 +78,7 @@ public:
 	intfconf_node(intfconf *, const char *);
 
 	virtual bool fill_defaults() { return true; }
-	virtual node *next_similiar_node() const;
+	virtual node *next_similar_node() const;
 };
 
 class interface_node : public node {
