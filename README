@@ -1,3 +1,10 @@
+[note from the author, 2013: mrd6 is unsupported software. Since
+ 2005 native multicast forwarding support has been added to Linux
+ and pim6sd can be used to manage it. mrd6's codebase is kept
+ around for historical reasons, it should still work in current
+ kernels and still allows you to do funky things with routing.
+ Feel free to fork. -hugo]
+
 This is mrd6, a ipv6 multicast routing daemon for Linux (and BSD).
 
 It supports MLDv2 (and MLDv1 compatibility), PIM-SM (including SSM
