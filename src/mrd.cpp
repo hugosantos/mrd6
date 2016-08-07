@@ -75,7 +75,6 @@
 
 mrd *g_mrd = 0;
 
-extern const char *BuildDate;
 static const char *VersionInfo = "mrd6 0.10.0";
 
 static const char *defaultconffiles[] = {
@@ -2335,7 +2334,6 @@ bool mrd::socket_regs(base_stream &out, const std::vector<std::string> &ctx) {
 
 void mrd::show_base_info(base_stream &out) const {
 	out.xprintf("Version: %s\n", VersionInfo);
-	out.xprintf("Build date: %s\n", BuildDate);
 }
 
 bool mrd::show_info(base_stream &out, const std::vector<std::string> &ctx) {
