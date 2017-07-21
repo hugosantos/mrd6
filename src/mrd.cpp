@@ -1243,8 +1243,12 @@ void mrd::change_user() {
 			fatal().xprintf("(MRD) Failed to drop privileges,"
 					" user %s doesn\'t exist.\n", user);
 		} else {
-			setuid(pwd->pw_uid);
-			setgid(pwd->pw_gid);
+			if (!(setuid(pwd->pw_uid)))
+				fatal().xprintf("(MRD) Failed to set uid\n",
+						"%s", pwd->pw_uid);
+			if (!(setgid(pwd->pw_gid)))
+				fatal().xprintf("(MRD) Failed to set gid\n",
+						"%s", pwd->pw_gid);
 		}
 	}
 }
